@@ -1,5 +1,6 @@
 import hmac
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -15,7 +16,18 @@ from app.providers import usage_totals
 from app.queue import LeaseLost, acknowledge, claim, heartbeat, renew
 from app.tools import registry
 
-app = FastAPI(title="Персональный AI-помощник", docs_url=None, redoc_url=None)
+
+@asynccontextmanager
+async def lifespan(app):
+    from app.bootstrap import install
+    from app.providers import YandexProvider
+
+    config, sessions = settings(), session_factory()
+    install(sessions, YandexProvider(config, sessions), config)
+    yield
+
+
+app = FastAPI(title="Персональный AI-помощник", docs_url=None, redoc_url=None, lifespan=lifespan)
 
 
 def auth(authorization: str = Header(default="")):
@@ -177,14 +189,30 @@ def operation_usage(operation_id: uuid.UUID):
 
 
 @app.post("/internal/operations/{operation_id}/file", dependencies=[Depends(auth)])
-async def upload(operation_id: uuid.UUID, file: UploadFile = File()):
+async def upload(
+    operation_id: uuid.UUID,
+    file: UploadFile = File(),
+    x_job_id: uuid.UUID | None = Header(default=None),
+    x_lease_token: uuid.UUID | None = Header(default=None),
+):
     with session_factory()() as session:
         op = session.get(Operation, operation_id)
         if not op or op.owner_id != settings().allowed_telegram_user_id:
             raise HTTPException(404, "Operation not found")
     if registry.upload is None:
         raise HTTPException(503, "PDF processing is not installed")
+    if bool(x_job_id) != bool(x_lease_token):
+        raise HTTPException(422, "Both lease headers are required")
+    lease = (x_job_id, x_lease_token) if x_job_id else None
+    if lease:
+        with session_factory()() as session:
+            job = session.get(Job, x_job_id)
+            if not job or job.operation_id != operation_id:
+                raise HTTPException(404, "Job not found")
     # Domain hook owns limits, media validation and atomic publication of the UUID-named file.
-    return await registry.upload(
-        op, Path(file.filename or "document.pdf").name, file.content_type, file
-    )
+    try:
+        return await registry.upload(
+            op, Path(file.filename or "document.pdf").name, file.content_type, file, lease
+        )
+    except LeaseLost as exc:
+        raise HTTPException(409, "Lease lost") from exc

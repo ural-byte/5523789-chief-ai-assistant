@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from app import domain_actions, models  # noqa: F401
+from app import domain_actions, domain_memory, models  # noqa: F401
 from app.db import Base
 
 

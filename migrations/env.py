@@ -1,7 +1,7 @@
 from alembic import context
 from sqlalchemy import create_engine
 
-from app import domain_actions, models  # noqa: F401
+from app import domain_actions, domain_memory, models  # noqa: F401
 from app.config import settings
 from app.db import Base
 
