@@ -180,3 +180,21 @@ async def test_local_upload_header_requires_auth_and_document_metadata(sessions,
         assert response.status_code == 422
     with sessions() as session:
         assert not session.get(Update, -99)
+
+
+def test_live_pdf_amount_formatting_preserves_amount_and_source_validation():
+    from scripts.benchmark import valid_fixture_answer
+
+    for value in ("500000", "500 000", "500\u00a0000", "500\u202f000"):
+        assert valid_fixture_answer(f"Бюджет {value} рублей. Источники: demo.pdf, стр. 1")
+    for answer in (
+        "Бюджет 550000 рублей. Источники: demo.pdf, стр. 1",
+        "Бюджет 5000000 рублей. Источники: demo.pdf, стр. 1",
+        "Бюджет 1 500 000 рублей. Источники: demo.pdf, стр. 1",
+        "Бюджет 500 000 000 рублей. Источники: demo.pdf, стр. 1",
+        "Бюджет 500000.50 рублей. Источники: demo.pdf, стр. 1",
+        "Бюджет 550000 рублей.\n\nИсточники: report500000.pdf, стр. 1",
+        "Бюджет 500000 рублей.",
+        "В найденных фрагментах PDF недостаточно оснований для ответа.",
+    ):
+        assert not valid_fixture_answer(answer)

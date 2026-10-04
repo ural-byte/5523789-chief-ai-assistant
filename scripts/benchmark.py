@@ -5,9 +5,11 @@ import asyncio
 import io
 import json
 import os
+import re
 import sys
 import time
 import uuid
+from decimal import Decimal
 from pathlib import Path
 
 import httpx
@@ -26,6 +28,15 @@ from scripts.measurements import aggregate, event_record, markdown
 
 class BenchmarkError(Exception):
     pass
+
+
+def valid_fixture_answer(answer):
+    # Providers may format the same integer with regular or nonbreaking spaces.
+    # Read the complete numeric span: a substring of 1 500 000 is not 500000.
+    content = answer.split("\n\nИсточники:", 1)[0]
+    spans = re.findall(r"[+-]?\d+(?:[ \u00a0\u202f]+\d+)*(?:[.,]\d+)?", content)
+    values = [Decimal(re.sub(r"\s", "", span).replace(",", ".")) for span in spans]
+    return Decimal(500000) in values and "стр. 1" in answer
 
 
 def pdf_fixture():
@@ -174,7 +185,7 @@ async def execute(config, sessions, client, manifest, manifest_path):
             select(History).where(History.operation_id == question_id).order_by(History.id.desc())
         )
         answer = grounded_answer(final.message.get("content", ""), sources) if final else ""
-        if "500000" not in answer or "стр. 1" not in answer:
+        if not valid_fixture_answer(answer):
             raise BenchmarkError("pdf_grounded_answer_failed")
     approval_id = await submit(
         "approval", f"Подготовь встречу завтра в 16:00: демонстрация {run_id}"
