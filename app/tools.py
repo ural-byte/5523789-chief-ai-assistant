@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,6 +13,7 @@ class ToolResult(BaseModel):
     user_message: str = ""
     buttons: list = Field(default_factory=list)
     sources: list[dict] = Field(default_factory=list)
+    presentation: Literal["model", "canonical", "grounded"] = "model"
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class ToolContext:
     timezone: str
     idempotency_key: str
     source_update: dict
+    lease: tuple | None = None
 
 
 class ToolHandler(Protocol):

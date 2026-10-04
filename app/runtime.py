@@ -2,9 +2,9 @@ import copy
 import json
 
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, update
 
-from app.models import History, Invocation, Job, Operation, Update
+from app.models import AICall, History, Invocation, Job, Operation, Update
 from app.providers import MAX_INPUT, BudgetExceeded, ProviderError
 from app.queue import enqueue_text, require_lease
 from app.tools import ToolContext, ToolResult
@@ -122,9 +122,28 @@ class Runtime:
             operation.timezone,
             str(invocation.id),
             source.payload if source else {},
+            lease,
         )
         handler = self.registry.tools.get(invocation.name)
         if invocation.result is None:
+            scenario = {
+                "create_task": "task_creation",
+                "prepare_meeting": "approval_preparation",
+                "save_memory": "memory",
+                "search_memory": "memory",
+                "search_document": "pdf_question",
+            }.get(invocation.name)
+            if scenario:
+                with self.sessions.begin() as session:
+                    self._guard(session, lease)
+                    op = session.get(Operation, operation.id, with_for_update=True)
+                    if op.scenario == "conversation":
+                        op.scenario = scenario
+                        session.execute(
+                            update(AICall)
+                            .where(AICall.operation_id == op.id, AICall.scenario == "conversation")
+                            .values(scenario=scenario)
+                        )
             try:
                 if handler is None:
                     raise ValueError("unsupported tool")
@@ -145,6 +164,14 @@ class Runtime:
                         )
                     )
                     row.result = ToolResult.model_validate(result).model_dump()
+                    if row.result.get("presentation") == "canonical":
+                        enqueue_text(
+                            session,
+                            session.get(Operation, operation.id),
+                            row.result["user_message"],
+                            row.result.get("buttons"),
+                            key_prefix=f"{operation.id}:invocation:{row.id}",
+                        )
                 invocation.result = row.result
         if invocation.model_result is None:
             with self.sessions() as session:
@@ -231,17 +258,24 @@ class Runtime:
                         .order_by(Invocation.ordinal)
                     ).all()
                     canonical = next(
-                        (row.result for row in reversed(last) if row.result.get("buttons")), None
+                        (
+                            row.result
+                            for row in reversed(last)
+                            if row.result.get("buttons")
+                            or row.result.get("presentation") == "canonical"
+                        ),
+                        None,
                     )
                     visible_text = canonical["user_message"] if canonical else response.text
                     if canonical and not visible_text:
                         raise ProviderError("missing_canonical_approval_summary")
-                    enqueue_text(
-                        session,
-                        operation,
-                        visible_text,
-                        canonical["buttons"] if canonical else None,
-                    )
+                    if not canonical or canonical.get("presentation") != "canonical":
+                        enqueue_text(
+                            session,
+                            operation,
+                            visible_text,
+                            canonical["buttons"] if canonical else None,
+                        )
                 return
             if not schemas:
                 raise ProviderError("tools_disallowed")

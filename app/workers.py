@@ -5,8 +5,10 @@ from contextlib import suppress
 
 import httpx
 
+from app.bootstrap import install
 from app.config import settings
 from app.db import session_factory
+from app.domain_actions import scheduler_loop
 from app.models import Job, Operation
 from app.providers import YandexProvider
 from app.queue import LeaseLost, acknowledge, claim, enqueue_text, heartbeat, renew
@@ -69,6 +71,17 @@ async def background_once(sessions, provider, config):
 async def background():
     config, sessions = settings(), session_factory()
     provider = YandexProvider(config, sessions)
+    install(sessions, provider, config)
+    scheduler = asyncio.create_task(scheduler_loop(sessions, config.allowed_telegram_user_id))
+    try:
+        await agent_loop(sessions, provider, config)
+    finally:
+        scheduler.cancel()
+        with suppress(asyncio.CancelledError):
+            await scheduler
+
+
+async def agent_loop(sessions, provider, config):
     while True:
         try:
             worked = await background_once(sessions, provider, config)

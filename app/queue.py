@@ -74,7 +74,7 @@ def heartbeat(session, name):
         session.add(Heartbeat(name=name))
 
 
-def enqueue_text(session, operation, text_value, buttons=None):
+def enqueue_text(session, operation, text_value, buttons=None, key_prefix=None):
     # Telegram's limit is 4096 Unicode characters; leave room for server-side counting.
     chunks = []
     chunk = ""
@@ -88,7 +88,7 @@ def enqueue_text(session, operation, text_value, buttons=None):
         units += size
     chunks.append(chunk or "Пустой ответ AI.")
     for index, chunk in enumerate(chunks):
-        key = f"{operation.id}:reply:{index}"
+        key = f"{key_prefix or str(operation.id) + ':reply'}:{index}"
         if session.scalar(select(Outbox.id).where(Outbox.key == key)):
             continue
         payload = {"chat_id": operation.chat_id, "text": chunk}
