@@ -1,0 +1,10 @@
+# Local credentials and runtime secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Local operating system metadata
+.DS_Store
