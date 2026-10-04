@@ -60,9 +60,15 @@ Future work: OCR, реальные календарь/почта, несколь
 
 | Проверка доработки | Состояние |
 |---|---|
-| Быстрый typing и понятный progress без инфраструктурных подробностей | Checker source PASS; live ожидается |
-| Измерение latency до/после, queue/retrieval/AI/delivery | Baseline собран; итог ожидается |
-| Очистка памяти, удаление документов, полный reset | Checker source PASS; live ожидается |
+| Быстрый typing и понятный progress без инфраструктурных подробностей | Checker source и live typing/PDF progress PASS |
+| Измерение latency до/после, queue/retrieval/AI/delivery | До/после собраны и независимо сверены с БД |
+| Очистка памяти, удаление документов, полный reset | Checker source PASS; настоящий reset ожидается |
 | Owner/TTL/immutable approval, атомарность, повторы и аудит удаления | Checker source PASS; Reviewer source APPROVE |
 | Файловые гонки, новые данные и восстановление после рестарта | Checker source PASS; Reviewer source APPROVE |
 | Продолжение клиентской приёмки после подтверждённого reset | Ожидается настоящий owner callback |
+
+Доработка опубликована в [PR2](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/2),
+обновлённый бот [доступен](https://t.me/UralbyteDemoBot). Source gates: 122 теста +
+14 независимых случаев PASS, Reviewer APPROVE; live latency/progress сверены с БД.
+[Фактическая поставка](deployment/bigbang-uralbyte8.md). PR не слит; настоящая очистка
+требует owner approval. Клиентская приёмка продолжается, вердикт не меняется.

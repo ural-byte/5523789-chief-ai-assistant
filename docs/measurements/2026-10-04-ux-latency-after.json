@@ -1,0 +1,314 @@
+{
+  "schema": "ux-latency-after-v1",
+  "date": "2026-10-04T16:50:05.080802+00:00",
+  "executable_revision": "d39e998845b6e105f88e9dcd92827143ef4023b6",
+  "ingress_mode": "synthetic internal updates; actual Telegram final acknowledgements and true Yandex for semantic control",
+  "rows": [
+    {
+      "label": "overview_1",
+      "latency": {
+        "operation_id": "5da6613b-48d4-4a84-8c9d-928972e0747d",
+        "scenario": "memory_overview",
+        "status": "done",
+        "source_message_at": "2026-10-04T16:47:02+00:00",
+        "received_at": "2026-10-04T16:47:02.348650+00:00",
+        "first_started_at": "2026-10-04T16:47:03.141195+00:00",
+        "processing_finished_at": "2026-10-04T16:47:03.522935+00:00",
+        "first_feedback_at": "2026-10-04T16:47:02.832865+00:00",
+        "final_delivery_ack_at": "2026-10-04T16:47:04.053238+00:00",
+        "source_to_ingress_ms": 349,
+        "queue_wait_ms": 793,
+        "runtime_ms": 382,
+        "retrieval_ms": 91,
+        "llm_tool_loop_ms": 0,
+        "ai_ms": 0,
+        "ai_calls": 0,
+        "delivery_ms": 530,
+        "end_to_end_ms": 1705,
+        "source_to_ack_ms": 2053
+      },
+      "tools": [],
+      "delivery_complete": true,
+      "send_latency_ms": [
+        196
+      ],
+      "usage": []
+    },
+    {
+      "label": "overview_2",
+      "latency": {
+        "operation_id": "d71f50ba-d231-4f72-8153-b1276169f33f",
+        "scenario": "memory_overview",
+        "status": "done",
+        "source_message_at": "2026-10-04T16:47:04+00:00",
+        "received_at": "2026-10-04T16:47:04.285966+00:00",
+        "first_started_at": "2026-10-04T16:47:04.557069+00:00",
+        "processing_finished_at": "2026-10-04T16:47:04.751120+00:00",
+        "first_feedback_at": "2026-10-04T16:47:04.630221+00:00",
+        "final_delivery_ack_at": "2026-10-04T16:47:05.221093+00:00",
+        "source_to_ingress_ms": 286,
+        "queue_wait_ms": 271,
+        "runtime_ms": 194,
+        "retrieval_ms": 66,
+        "llm_tool_loop_ms": 0,
+        "ai_ms": 0,
+        "ai_calls": 0,
+        "delivery_ms": 470,
+        "end_to_end_ms": 935,
+        "source_to_ack_ms": 1221
+      },
+      "tools": [],
+      "delivery_complete": true,
+      "send_latency_ms": [
+        96
+      ],
+      "usage": []
+    },
+    {
+      "label": "overview_3",
+      "latency": {
+        "operation_id": "d720794e-0578-401e-9317-9fb25510a3cb",
+        "scenario": "memory_overview",
+        "status": "done",
+        "source_message_at": "2026-10-04T16:47:05+00:00",
+        "received_at": "2026-10-04T16:47:05.349164+00:00",
+        "first_started_at": "2026-10-04T16:47:05.826743+00:00",
+        "processing_finished_at": "2026-10-04T16:47:05.855498+00:00",
+        "first_feedback_at": "2026-10-04T16:47:05.722450+00:00",
+        "final_delivery_ack_at": "2026-10-04T16:47:06.136401+00:00",
+        "source_to_ingress_ms": 349,
+        "queue_wait_ms": 478,
+        "runtime_ms": 29,
+        "retrieval_ms": 5,
+        "llm_tool_loop_ms": 0,
+        "ai_ms": 0,
+        "ai_calls": 0,
+        "delivery_ms": 281,
+        "end_to_end_ms": 787,
+        "source_to_ack_ms": 1136
+      },
+      "tools": [],
+      "delivery_complete": true,
+      "send_latency_ms": [
+        84
+      ],
+      "usage": []
+    },
+    {
+      "label": "semantic_save",
+      "latency": {
+        "operation_id": "ad014690-f53b-45dc-b101-6fa9608cc07c",
+        "scenario": "memory",
+        "status": "done",
+        "source_message_at": "2026-10-04T16:47:06+00:00",
+        "received_at": "2026-10-04T16:47:06.393282+00:00",
+        "first_started_at": "2026-10-04T16:47:06.867021+00:00",
+        "processing_finished_at": "2026-10-04T16:47:10.392891+00:00",
+        "first_feedback_at": "2026-10-04T16:47:06.686000+00:00",
+        "final_delivery_ack_at": "2026-10-04T16:47:09.976374+00:00",
+        "source_to_ingress_ms": 393,
+        "queue_wait_ms": 474,
+        "runtime_ms": 3526,
+        "retrieval_ms": null,
+        "llm_tool_loop_ms": 3502,
+        "ai_ms": 3336,
+        "ai_calls": 3,
+        "delivery_ms": null,
+        "end_to_end_ms": 3583,
+        "source_to_ack_ms": 3976
+      },
+      "tools": [
+        "save_memory"
+      ],
+      "delivery_complete": true,
+      "send_latency_ms": [
+        78
+      ],
+      "usage": [
+        {
+          "type": "generation",
+          "model": "gpt://deepseek-v4.1-flash/latest",
+          "latency_ms": 2562,
+          "input_tokens": 3024,
+          "output_tokens": 253,
+          "embedding_tokens": null,
+          "cost": "1.0337000000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        },
+        {
+          "type": "embedding",
+          "model": "emb://<folder>/text-embeddings-v2-doc/latest",
+          "latency_ms": 57,
+          "input_tokens": null,
+          "output_tokens": null,
+          "embedding_tokens": 57,
+          "cost": "0.0005757000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        },
+        {
+          "type": "generation",
+          "model": "gpt://deepseek-v4.1-flash/latest",
+          "latency_ms": 717,
+          "input_tokens": 729,
+          "output_tokens": 45,
+          "embedding_tokens": null,
+          "cost": "0.2412000000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "label": "semantic_query",
+      "latency": {
+        "operation_id": "3b23db4c-3045-4fbf-b8df-89f16dccadaf",
+        "scenario": "pdf_question",
+        "status": "done",
+        "source_message_at": "2026-10-04T16:47:10+00:00",
+        "received_at": "2026-10-04T16:47:10.519049+00:00",
+        "first_started_at": "2026-10-04T16:47:11.407977+00:00",
+        "processing_finished_at": "2026-10-04T16:47:15.854602+00:00",
+        "first_feedback_at": "2026-10-04T16:47:10.696838+00:00",
+        "final_delivery_ack_at": "2026-10-04T16:47:12.924600+00:00",
+        "source_to_ingress_ms": 519,
+        "queue_wait_ms": 889,
+        "runtime_ms": 4447,
+        "retrieval_ms": 2,
+        "llm_tool_loop_ms": 4418,
+        "ai_ms": 4180,
+        "ai_calls": 2,
+        "delivery_ms": null,
+        "end_to_end_ms": 2406,
+        "source_to_ack_ms": 2925
+      },
+      "tools": [
+        "search_document"
+      ],
+      "delivery_complete": true,
+      "send_latency_ms": [
+        90
+      ],
+      "usage": [
+        {
+          "type": "generation",
+          "model": "gpt://deepseek-v4.1-flash/latest",
+          "latency_ms": 1182,
+          "input_tokens": 3015,
+          "output_tokens": 110,
+          "embedding_tokens": null,
+          "cost": "0.9019000000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        },
+        {
+          "type": "generation",
+          "model": "gpt://deepseek-v4.1-flash/latest",
+          "latency_ms": 2998,
+          "input_tokens": 594,
+          "output_tokens": 204,
+          "embedding_tokens": null,
+          "cost": "0.2226000000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "label": "semantic_query_memory",
+      "latency": {
+        "operation_id": "af5b972a-7cef-4546-9d96-713021479ed2",
+        "scenario": "memory",
+        "status": "done",
+        "source_message_at": "2026-10-04T16:49:59+00:00",
+        "received_at": "2026-10-04T16:49:59.271168+00:00",
+        "first_started_at": "2026-10-04T16:49:59.756732+00:00",
+        "processing_finished_at": "2026-10-04T16:50:04.549031+00:00",
+        "first_feedback_at": "2026-10-04T16:49:59.691596+00:00",
+        "final_delivery_ack_at": "2026-10-04T16:50:04.798563+00:00",
+        "source_to_ingress_ms": 271,
+        "queue_wait_ms": 486,
+        "runtime_ms": 4792,
+        "retrieval_ms": 26,
+        "llm_tool_loop_ms": 4663,
+        "ai_ms": 3492,
+        "ai_calls": 4,
+        "delivery_ms": 250,
+        "end_to_end_ms": 5527,
+        "source_to_ack_ms": 5799
+      },
+      "tools": [
+        "search_memory",
+        "search_memory"
+      ],
+      "delivery_complete": true,
+      "send_latency_ms": [
+        134
+      ],
+      "usage": [
+        {
+          "type": "generation",
+          "model": "gpt://deepseek-v4.1-flash/latest",
+          "latency_ms": 1132,
+          "input_tokens": 3025,
+          "output_tokens": 148,
+          "embedding_tokens": null,
+          "cost": "0.9239000000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        },
+        {
+          "type": "embedding",
+          "model": "emb://<folder>/text-embeddings-v2-query/latest",
+          "latency_ms": 181,
+          "input_tokens": null,
+          "output_tokens": null,
+          "embedding_tokens": 48,
+          "cost": "0.0004848000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        },
+        {
+          "type": "embedding",
+          "model": "emb://<folder>/text-embeddings-v2-query/latest",
+          "latency_ms": 190,
+          "input_tokens": null,
+          "output_tokens": null,
+          "embedding_tokens": 15,
+          "cost": "0.0001515000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        },
+        {
+          "type": "generation",
+          "model": "gpt://deepseek-v4.1-flash/latest",
+          "latency_ms": 1989,
+          "input_tokens": 1091,
+          "output_tokens": 232,
+          "embedding_tokens": null,
+          "cost": "0.4433000000",
+          "currency": "RUB",
+          "pricing_version": "yandex-2026-10-04-v4.1",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ],
+  "semantic_control_grounded": true,
+  "initial_control_limitation": "Initial broad project question selected document search; explicit memory search measured separately, initial usage retained.",
+  "status": "passed",
+  "limitations": [
+    "Controlled samples bypass Telegram receiving; their source-to-ingress metric is not a network benchmark.",
+    "Three matched textual queries do not establish a latency SLA.",
+    "Stage durations can overlap; AI duration is included in runtime."
+  ]
+}
