@@ -65,6 +65,11 @@ def main():
     )
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--telegram-route",
+        action="store_true",
+        help="Explicit optional Telegram hostAliases overlay",
+    )
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9./:_-]+@sha256:[a-f0-9]{64}", args.image):
         raise SystemExit("--image must be an immutable sha256 reference")
@@ -73,7 +78,8 @@ def main():
         raise SystemExit("Required environment settings are missing; see .env.example")
     password = quote(values["POSTGRES_PASSWORD"], safe="")
     values["DATABASE_URL"] = f"postgresql+psycopg://assistant:{password}@db:5432/assistant"
-    rendered = run(args.context, ["kustomize", str(ROOT)])
+    manifests = ROOT.parent / "telegram-route" if args.telegram_route else ROOT
+    rendered = run(args.context, ["kustomize", str(manifests)])
     rendered = rendered.replace("chief-ai-assistant:local", args.image)
     rendered = rendered.replace(
         "pgvector/pgvector:pg16@sha256:7b822b0aac60967beb1ea5e576b8602c94c300a157d187f385ae3e0da199b90a",

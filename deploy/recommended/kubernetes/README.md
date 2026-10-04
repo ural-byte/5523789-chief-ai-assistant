@@ -99,3 +99,27 @@ kubectl --context yc-big-bang -n chief-ai-assistant exec deploy/assistant -c bac
 прежнее pending approval и проверьте напоминание. Реальные кнопки нажимает владелец;
 benchmark создаёт pending approval и не подтверждает его автоматически.
 Клиентская приёмка: [../../../docs/acceptance.md](../../../docs/acceptance.md).
+
+## Явная Telegram route overlay
+
+На 2026-10-04 в bigbang обычный DNS `api.telegram.org` возвращал `149.154.166.110`;
+TCP443 к нему из pod завершался timeout. GitHub/PyPI/Yandex доступны; namespace не имел
+NetworkPolicy, node SG разрешала весь outbound. Причина upstream routing не установлена.
+Адрес `149.154.167.220` дал TCP44ms, TLS1.3 с полной проверкой сертификата/hostname
+`api.telegram.org` и настоящий getMe HTTP200 для того же бота.
+
+`../telegram-route` добавляет hostAliases только app pod. URI остаётся официальным
+`https://api.telegram.org`; TLS не отключается. Это явная временная инфраструктурная настройка,
+а не гарантированный постоянный endpoint: IP Telegram может измениться. В текущем bigbang
+deploy и при его обновлении добавляйте флаг `--telegram-route` к deploy.py. Например:
+
+```sh
+.venv/bin/python deploy/recommended/kubernetes/deploy.py \
+  --context yc-big-bang --image 'cr.yandex/<registry-id>/chief-ai-assistant@sha256:<digest>' \
+  --env-file .env --telegram-route
+kubectl --context yc-big-bang kustomize deploy/recommended/telegram-route
+```
+
+Перед повторным использованием проверьте TLS hostname и read-only getMe из кластера.
+Когда обычный DNS снова работает, выполните deploy без флага и проверьте polling/delivery.
+Overlay не изменяет DNS/VPC всего кластера или другие workloads.
