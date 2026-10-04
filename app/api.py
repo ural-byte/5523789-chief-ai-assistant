@@ -51,7 +51,7 @@ def health():
 
 
 @app.post("/internal/updates", dependencies=[Depends(auth)])
-def ingest(payload: dict):
+def ingest(payload: dict, x_local_upload: bool = Header(default=False)):
     update_id = payload.get("update_id")
     if not isinstance(update_id, int) or isinstance(update_id, bool):
         raise HTTPException(422, "update_id required")
@@ -93,7 +93,14 @@ def ingest(payload: dict):
                     message={"role": "user", "content": message.get("text", "")},
                 )
             )
-        session.add(Job(key=f"update:{update_id}", operation_id=op.id, kind=kind, payload=payload))
+        if x_local_upload and kind != "document":
+            raise HTTPException(422, "Local upload requires document metadata")
+        # Trusted local transfer uses the same durable ingress but publishes the file
+        # through /file before scheduling indexing; it must never race a getFile job.
+        if not x_local_upload:
+            session.add(
+                Job(key=f"update:{update_id}", operation_id=op.id, kind=kind, payload=payload)
+            )
         return {"accepted": True, "operation_id": str(op.id)}
 
 
