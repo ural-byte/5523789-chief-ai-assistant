@@ -161,6 +161,11 @@ class YandexProvider:
                 actual_model = response_data.get("model", model)
                 if not isinstance(actual_model, str):
                     raise ProviderError("invalid_response_model")
+                if actual_model == "latest":
+                    # Yandex may report only a version tag, which cannot identify a
+                    # billable model. Retain that tag and the requested model identity.
+                    usage.extras["response_model"] = actual_model
+                    actual_model = model
             except (httpx.HTTPError, ValueError, ProviderError) as exc:
                 error = str(exc) if isinstance(exc, ProviderError) else type(exc).__name__
                 retry = retry or isinstance(exc, httpx.TransportError)
@@ -267,7 +272,7 @@ class YandexProvider:
             operation_id,
             "embedding",
             model_uri,
-            {"model": model_uri, "input": value, "dimensions": 256},
+            {"model": model_uri, "input": value, "dimensions": 256, "encoding_format": "float"},
             lease,
         )
         try:

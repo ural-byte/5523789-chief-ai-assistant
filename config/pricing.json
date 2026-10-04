@@ -1,10 +1,34 @@
 {
-  "version": "yandex-2026-10-04", "date": "2026-10-04", "provider": "yandex",
-  "currency": "RUB", "unit": 1000,
+  "version": "yandex-2026-10-04-v4.1",
+  "date": "2026-10-04",
+  "provider": "yandex",
+  "currency": "RUB",
+  "unit": 1000,
   "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
   "models": {
-    "deepseek-v4-flash": {"input": "0.3", "cached": "0.075", "output": "0.5"},
-    "text-embeddings-v2-doc/": {"embedding": "0.0101"},
-    "text-embeddings-v2-query/": {"embedding": "0.0101"}
+    "deepseek-v4-flash": {
+      "input": "0.3",
+      "cached": "0.075",
+      "output": "0.5"
+    },
+    "text-embeddings-v2-doc/": {
+      "embedding": "0.0101"
+    },
+    "text-embeddings-v2-query/": {
+      "embedding": "0.0101"
+    },
+    "deepseek-v4.1-flash": {
+      "input": "0.3",
+      "cached": "0.075",
+      "output": "0.5"
+    }
+  },
+  "aliases": {
+    "deepseek-v4-flash/latest": "deepseek-v4-flash",
+    "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+    "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+    "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+    "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+    "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash"
   }
 }

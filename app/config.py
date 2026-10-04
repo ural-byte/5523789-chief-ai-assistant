@@ -40,6 +40,10 @@ class Settings(BaseSettings):
         return value
 
     def model_uri(self, model: str, embedding: bool = False) -> str:
+        # The live OpenAI embeddings gateway rejects an empty version segment;
+        # make the documented default version explicit without changing the model.
+        if embedding and model.endswith("/"):
+            model += "latest"
         if model.startswith(("gpt://", "emb://")):
             return model
         return f"{'emb' if embedding else 'gpt'}://{self.ai_folder_id}/{model}"

@@ -33,6 +33,62 @@ def config(protocol="native", attempts=1):
     )
 
 
+async def test_yandex_version_only_response_preserves_model_identity_and_cost(sessions):
+    op_id = operation(sessions)
+    cfg = config()
+    cfg.generation_model = "deepseek-v4.1-flash"
+
+    def respond(request):
+        return httpx.Response(
+            200,
+            json={
+                "model": "latest",
+                "choices": [{"message": {"role": "assistant", "content": "Готово"}}],
+                "usage": {
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 100,
+                    "prompt_tokens_details": {"cached_tokens": 200},
+                },
+            },
+        )
+
+    result = await YandexProvider(cfg, sessions, httpx.MockTransport(respond)).generate(
+        op_id, [{"role": "user", "content": "Проверка"}], []
+    )
+    assert result.model == "gpt://folder/deepseek-v4.1-flash"
+    with sessions() as session:
+        event = session.scalar(select(AICall))
+        assert event.model == result.model and event.extra_usage["response_model"] == "latest"
+        assert event.cost_complete and str(event.cost) == "0.3050000000"
+
+
+async def test_embedding_gateway_explicit_latest_and_float(sessions):
+    op_id = operation(sessions)
+    cfg = config()
+
+    def respond(request):
+        payload = json.loads(request.content)
+        assert payload["model"] == "emb://folder/text-embeddings-v2-doc/latest"
+        assert payload["encoding_format"] == "float" and payload["dimensions"] == 256
+        return httpx.Response(
+            200,
+            json={
+                "model": payload["model"],
+                "data": [{"embedding": [1.0] + [0.0] * 255}],
+                "usage": {"prompt_tokens": 14, "total_tokens": 14},
+            },
+        )
+
+    result = await YandexProvider(cfg, sessions, httpx.MockTransport(respond)).embed(
+        op_id, "Проверка"
+    )
+    assert len(result.vector) == 256
+    with sessions() as session:
+        event = session.scalar(select(AICall))
+        assert event.embedding_tokens == 14 and event.cost_complete
+        assert str(event.cost) == "0.0001414000"
+
+
 class Arguments(BaseModel):
     model_config = ConfigDict(extra="forbid")
     query: str
@@ -193,8 +249,8 @@ async def test_embeddings_v2_dimensions_usage_and_validation(sessions):
     for purpose in ("doc", "query"):
         assert len((await provider.embed(op_id, "Текст", purpose)).vector) == 256
     assert seen == [
-        "emb://folder/text-embeddings-v2-doc/",
-        "emb://folder/text-embeddings-v2-query/",
+        "emb://folder/text-embeddings-v2-doc/latest",
+        "emb://folder/text-embeddings-v2-query/latest",
     ]
     with sessions() as session:
         assert all(

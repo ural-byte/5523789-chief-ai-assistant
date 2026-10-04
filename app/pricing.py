@@ -54,7 +54,9 @@ class Pricing:
         self.config = json.loads(path.read_text())
 
     def snapshot(self, model: str) -> dict:
+        model = self.config.get("aliases", {}).get(model, model)
         suffix = model.split("/", 3)[-1] if model.startswith(("gpt://", "emb://")) else model
+        suffix = self.config.get("aliases", {}).get(suffix, suffix)
         return {**self.config, "rates": self.config["models"].get(suffix)}
 
     def calculate(self, usage: Usage, snapshot: dict, embedding=False):

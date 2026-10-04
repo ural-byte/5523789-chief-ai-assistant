@@ -27,13 +27,13 @@ Generation: `gpt://<folder>/deepseek-v4-flash`, Yandex OpenAI-compatible API `ht
 docker compose exec backend python -m scripts.probe_ai
 ```
 
-Probe выполняет безвредный echo tool roundtrip и doc/query embeddings, сохраняет метрики в БД и выводит статус с идентификатором операции без запросов/секретов. Если native tools действительно не поддерживаются, зафиксируйте ошибку и явно выберите JSON mode, затем повторите проверку. Live proof пока **pending**: AI credentials отсутствуют; поддержка конкретной модели реальным запросом ещё не подтверждена.
+Probe выполняет безвредный echo tool roundtrip и doc/query embeddings, сохраняет метрики в БД и выводит статус с идентификатором операции без запросов/секретов. Если native tools действительно не поддерживаются, зафиксируйте ошибку и явно выберите JSON mode, затем повторите проверку. Live proof 2026-10-04: DeepSeek V4.1 Flash в native mode прошёл настоящий tool roundtrip, оба embeddings вернули 256 значений. Gateway embeddings требует явную версию `/latest`; adapter добавляет её к URI с пустой версией и запрашивает float. Generation gateway возвращает `gpt://deepseek-v4.1-flash/latest` без folder ID; pricing alias хранится в конфигурации. Владелец настроил V4.1 Flash через environment; исходная V4 Flash также остаётся доступной конфигурацией.
 
 Каждая HTTP-попытка AI имеет собственную строку `ai_calls`: provider/model/type/scenario, nullable фактические токены, numeric usage details, latency, status/error, логический call ID, attempt, стоимость/полнота/валюта/версия и snapshot ставок. Начатая до сбоя попытка остаётся с неизвестным исходом. Retries считаются отдельными попытками; каждый generation request расходует общий бюджет операции. Для безопасности многоязычного контекста используется консервативная оценка по UTF-8 bytes полной сериализации запроса с запасом. Лимиты: суммарный вход 16 000, выход 2 000 на вызов, максимум пять индивидуальных вызовов инструментов, включая некорректные. Перед финальным ответом инструменты отключаются.
 
 Ставки находятся в `config/pricing.json`, а не в доменной логике. Снимок на 2026-10-04: DeepSeek вход 0,30 ₽/1000, cache 0,075 ₽/1000, выход 0,50 ₽/1000; embeddings 0,0101 ₽/1000. Cache является частью входа, reasoning — частью выхода; результаты пользовательских функций оплачиваются как обычный вход. Embedding prompt/total учитывается один раз. Если применимая метрика неизвестна, стоимость отмечается неполной; отсутствие usage не превращается в нулевое потребление. [Тарифы Yandex](https://aistudio.yandex.ru/ru/docs/ai-studio/pricing), [embeddings](https://aistudio.yandex.ru/ru/docs/ai-studio/concepts/embeddings).
 
-`GET /internal/operations/{id}/usage` возвращает сумму известной стоимости, количество неполных вызовов и известные токены с количеством неизвестных значений. Результаты реальных четырёх сценариев пока pending; таблица будет заполнена после подключения настоящего API. Для PDF измеряются отдельно индексация и вопрос. Тестовые показатели не являются экономикой живой демонстрации.
+`GET /internal/operations/{id}/usage` возвращает сумму известной стоимости, количество неполных вызовов и известные токены с количеством неизвестных значений. Результаты реальных четырёх сценариев приведены ниже; технический отчёт содержит все попытки, включая unknown показатели. Для PDF измеряются отдельно индексация и вопрос. Тестовые показатели не являются экономикой живой демонстрации.
 
 ## Внутренние контракты
 
@@ -56,9 +56,7 @@ TEST_DATABASE_URL=postgresql+psycopg://assistant:assistant@localhost:5432/assist
 
 Тесты требуют отдельную настоящую PostgreSQL/pgvector БД с суффиксом `_test` и очищают её. CI проверяет lint и тесты с pgvector service. Lock-файлы закрепляют прямые и транзитивные зависимости.
 
-На одном VPS в РФ установите Docker/Compose, получите checkout нужной версии, создайте `.env` непосредственно на сервере и выполните локальные команды запуска. Backend опубликован только на loopback. Для обновления получите новую версию checkout, выполните `docker compose up -d --build` и проверьте `compose ps`, health/probe и демонстрационные сценарии. `docker compose down` сохраняет volumes; `down -v` удаляет данные и не используется при обновлении. Смена пароля существующего PostgreSQL volume требует отдельного изменения роли БД; одно редактирование `.env` пароль в существующей БД не меняет.
-
-VPS deployment и живые сценарии остаются pending до предоставления инфраструктуры/локальных credentials. Инженерная готовность требует реального доступного бота, напоминания и проверки сохранности данных после рестарта.
+Утверждённый target — Kubernetes bigbang в РФ. Спеки и полный порядок запуска/обновления находятся в [deploy/recommended/kubernetes](deploy/recommended/kubernetes/README.md). Compose сохраняется для локального запуска. Kubernetes использует отдельные worker containers, постоянные PVC, migration init, health/heartbeat probes и Deployment Recreate. Инженерная проверка в кластере проводится после публикации image; клиентский вердикт фиксируется отдельно.
 
 ## Поручения и подтверждения
 
@@ -78,18 +76,26 @@ Scheduler работает отдельной coroutine каждые пять с
 
 ## Реальные измерения демонстрации
 
-До подключения настоящего Yandex API фактические токены и стоимость **не измерены**.
-Дата конфигурации ставок: 2026-10-04; RUB, DeepSeek input/cache/output 0,30/0,075/0,50
-за 1000 токенов, embeddings 0,0101 за 1000. Реальный отчёт фиксирует применённый snapshot
-каждого вызова, возвращённую модель и дату измерения. Тарифы следует сверить перед запуском.
+Фактический успешный прогон 2026-10-04 12:27:55 UTC через настоящий Yandex API:
+DeepSeek V4.1 Flash (native), embeddings v2 doc/query, 256 измерений. Это небольшой
+одностраничный текстовый PDF и по одному типичному запросу каждого сценария; объём PDF
+и история влияют на стоимость. [Отчёт всех вызовов](docs/measurements/2026-10-04-local.json).
 
-| Сценарий | Модели для запуска | Фактические токены | Ориентировочная стоимость |
-|---|---|---|---|
-| Создание поручения | DeepSeek V4 Flash | Не измерены | Не измерена |
-| Память: сохранение и поиск | DeepSeek; embeddings v2 doc/query | Не измерены | Не измерена |
-| PDF: загрузка и индексация | embeddings v2 doc | Не измерены | Не измерена |
-| PDF: последующий вопрос | DeepSeek; embeddings v2 query | Не измерены | Не измерена |
-| Подготовка действия с approval | DeepSeek V4 Flash | Не измерены | Не измерена |
+| Сценарий | Модели | Input / output tokens | Embedding tokens | Cache tokens (часть input) | Стоимость, RUB |
+|---|---|---:|---:|---:|---:|
+| Создание поручения | DeepSeek V4.1 Flash | 3509 / 444 | — | 0 | 1,274700 |
+| Память: сохранение и поиск | DeepSeek + v2 doc/query | 7064 / 481 | 90 | 768 | 2,187809 |
+| PDF: загрузка и индексация | v2 doc | — | 21 | 0 | 0,000212 |
+| PDF: последующий вопрос | DeepSeek + v2 query | 3690 / 387 | 11 | 256 | 1,243011 |
+| Подготовка действия с approval | DeepSeek V4.1 Flash | 3589 / 568 | — | 512 | 1,245500 |
+
+Всего 14 HTTP calls: 17 852 generation input, 1880 output, 122 embedding tokens,
+1536 cache tokens; ориентировочно **5,951232 RUB**. Все применимые для тарифа показатели
+получены; отдельный tool tokens API не возвращает и хранится как unknown, а не ноль.
+«—» означает неприменимый тип операции. Reasoning входит в output и не добавляется второй раз.
+Стоимость — оценка по сохранённым ставкам `yandex-2026-10-04-v4.1`, не счёт провайдера:
+input/cache/output 0,30/0,075/0,50 RUB за 1000, embeddings 0,0101 RUB за 1000.
+Неуспешные диагностические прогоны хранятся отдельно в БД и не выдаются за этот успешный прогон.
 
 После успешного probe запустите (команда создаёт настоящие поручение, память и pending
 approval в текущем аккаунте; встречу автоматически не подтверждает):
@@ -116,31 +122,11 @@ update/операцию и откладывает getFile до загрузки 
 
 ## Первоначальный deploy и обновление
 
-VPS должен находиться в РФ. Используйте подготовленный SSH-профиль, например
-`ssh <profile>`; токены и пароль вводите на сервере в `.env`, а не в командах чата.
-Один бот должен иметь только один активный long-polling worker.
-
-```sh
-git clone https://github.com/ural-byte/5523789-chief-ai-assistant.git
-cd 5523789-chief-ai-assistant
-git checkout <approved-commit>
-cp .env.example .env
-chmod 600 .env
-# Настройте .env локальным редактором на сервере.
-docker compose up -d --build
-docker compose ps
-curl --fail http://127.0.0.1:8000/health
-docker compose exec backend python -m scripts.probe_ai
-```
-
-Для ручной миграции: `docker compose run --rm backend alembic upgrade head`.
-Обычный старт backend применяет её автоматически; worker зависит от healthy backend.
-Перед обновлением сохраните backup PostgreSQL (`pg_dump` из db) и documents volume,
-затем получите утверждённый commit и выполните `docker compose up -d --build`.
-Не используйте `down -v`. После обновления проверьте health, Telegram, сохранённую память,
-старый PDF и pending approval. Откат приложения после изменения схемы требует проверки
-совместимости; восстановление backup выполняется отдельной операцией.
+Основная поставка — [recommended Kubernetes deployment](deploy/recommended/kubernetes/README.md)
+для `yc-big-bang` в `ru-central1-d`. Там описаны clean checkout, image digest, Secret из
+локального `.env`, migrations, backup, обновление, health и проверки после перезапуска.
+Для локального Compose backend применяет migrations автоматически; ручная команда:
+`docker compose run --rm backend alembic upgrade head`. Не используйте `down -v` при обновлении.
 
 Полный порядок живой инженерной и клиентской проверки: [docs/acceptance.md](docs/acceptance.md).
-Локальные PASS/APPROVE и зелёный CI не закрывают URALBYTE-7: для готовности нужны доступный
-бот на VPS, реальные измерения, напоминание и сохранность данных после рестарта.
+Клиентская приёмка заканчивается отдельным вердиктом владельца: ACCEPT, ACCEPT WITH CHANGES или REJECT.
