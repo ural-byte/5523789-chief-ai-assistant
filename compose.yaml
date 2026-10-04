@@ -1,0 +1,60 @@
+name: chief-ai-assistant
+x-app: &app
+  build: .
+  env_file: ${ENV_FILE:-.env}
+  restart: unless-stopped
+  volumes:
+    - documents:/srv/data/documents
+  depends_on:
+    db:
+      condition: service_healthy
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: assistant
+      POSTGRES_USER: assistant
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U assistant -d assistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    <<: *app
+    command: [sh, -c, "alembic upgrade head && uvicorn app.api:app --host 0.0.0.0 --port 8000 --no-access-log"]
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test: [CMD, python, -c, "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  telegram:
+    <<: *app
+    command: [python, -m, app.workers, telegram]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -m, app.health, telegram]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+  background:
+    <<: *app
+    command: [python, -m, app.workers, background]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -m, app.health, background]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+volumes:
+  postgres:
+  documents:
