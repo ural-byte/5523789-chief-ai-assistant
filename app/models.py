@@ -34,6 +34,62 @@ class Operation(Base):
     tool_steps: Mapped[int] = mapped_column(Integer, default=0)
     reference_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     timezone: Mapped[str] = mapped_column(String)
+    context_epoch: Mapped[int] = mapped_column(Integer, default=0)
+    source_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=now)
+    first_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    processing_finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    first_feedback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    final_delivery_ack_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retrieval_ms: Mapped[int | None] = mapped_column(Integer)
+    agent_loop_ms: Mapped[int | None] = mapped_column(Integer)
+
+
+class UserState(Base):
+    __tablename__ = "user_states"
+    owner_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    context_epoch: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Tombstone(Base):
+    __tablename__ = "tombstones"
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    approval_id: Mapped[uuid.UUID] = mapped_column(UUID)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class FileIntent(Base):
+    __tablename__ = "file_intents"
+    path: Mapped[str] = mapped_column(String, primary_key=True)
+    operation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(Operation.id), index=True)
+    owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+
+class DeletionCleanup(Base):
+    __tablename__ = "deletion_cleanups"
+    approval_id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True)
+    paths: Mapped[list] = mapped_column(JSONB)
+    remaining: Mapped[list] = mapped_column(JSONB)
+    error_code: Mapped[str | None] = mapped_column(String)
+
+
+class ApprovalAudit(Base):
+    __tablename__ = "approval_audit"
+    callback_id: Mapped[str] = mapped_column(String, primary_key=True)
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(UUID)
+    operation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(Operation.id))
+    outcome: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Activity(Base):
+    __tablename__ = "activities"
+    operation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(Operation.id), primary_key=True)
+    next_typing_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    progress_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    progress_sent: Mapped[bool] = mapped_column(default=False)
+    document: Mapped[bool] = mapped_column(default=False)
 
 
 class History(Base):
@@ -78,6 +134,9 @@ class Job(QueueItem):
 
 class Outbox(QueueItem):
     __tablename__ = "outbox"
+    purpose: Mapped[str] = mapped_column(String, default="final")
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    send_latency_ms: Mapped[int | None] = mapped_column(Integer)
 
 
 class AICall(Base):

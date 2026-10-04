@@ -1,0 +1,168 @@
+{
+  "schema": "ux-latency-before-v1",
+  "executable_revision": "181dbc5b378bcdd0cb48c9d33682860e2fc2ede2",
+  "ingress_mode": "synthetic internal updates; normal agent runtime and actual Telegram sending",
+  "poll_resolution_ms": 250,
+  "samples": [
+    {
+      "date": "2026-10-04T15:19:22.142638+00:00",
+      "operation_id": "ff7359f1-3a4b-47a0-8413-8e43a8e482f1",
+      "queue_wait_observed_ms": 612,
+      "processing_finished_observed_ms": 6038,
+      "e2e_observed_ms": 8587,
+      "poll_resolution_ms": 250,
+      "status": "done",
+      "tools": [
+        "search_memory"
+      ],
+      "api_calls": [
+        {
+          "type": "generation",
+          "latency_ms": 982,
+          "input_tokens": 2828,
+          "output_tokens": 72,
+          "status": "succeeded"
+        },
+        {
+          "type": "embedding",
+          "latency_ms": 217,
+          "input_tokens": null,
+          "output_tokens": null,
+          "status": "succeeded"
+        },
+        {
+          "type": "generation",
+          "latency_ms": 3196,
+          "input_tokens": 900,
+          "output_tokens": 269,
+          "status": "succeeded"
+        }
+      ],
+      "delivery_observed_ms": 2549
+    },
+    {
+      "date": "2026-10-04T15:34:35.431853+00:00",
+      "operation_id": "57f981ab-16c7-405e-bbb1-82b6625a04c0",
+      "queue_wait_observed_ms": 1134,
+      "processing_finished_observed_ms": 6336,
+      "e2e_observed_ms": 23910,
+      "poll_resolution_ms": 250,
+      "status": "done",
+      "tools": [
+        "search_memory"
+      ],
+      "api_calls": [
+        {
+          "type": "generation",
+          "latency_ms": 814,
+          "input_tokens": 2828,
+          "output_tokens": 64,
+          "status": "succeeded"
+        },
+        {
+          "type": "embedding",
+          "latency_ms": 108,
+          "input_tokens": null,
+          "output_tokens": null,
+          "status": "succeeded"
+        },
+        {
+          "type": "generation",
+          "latency_ms": 3777,
+          "input_tokens": 892,
+          "output_tokens": 352,
+          "status": "succeeded"
+        }
+      ],
+      "delivery_observed_ms": 17574
+    },
+    {
+      "date": "2026-10-04T15:34:59.352645+00:00",
+      "operation_id": "65a2b2a1-de48-4e1a-80dc-0d3bf91ac0f2",
+      "queue_wait_observed_ms": 1035,
+      "processing_finished_observed_ms": 4852,
+      "e2e_observed_ms": 6628,
+      "poll_resolution_ms": 250,
+      "status": "done",
+      "tools": [
+        "search_memory"
+      ],
+      "api_calls": [
+        {
+          "type": "generation",
+          "latency_ms": 961,
+          "input_tokens": 2828,
+          "output_tokens": 88,
+          "status": "succeeded"
+        },
+        {
+          "type": "embedding",
+          "latency_ms": 48,
+          "input_tokens": null,
+          "output_tokens": null,
+          "status": "succeeded"
+        },
+        {
+          "type": "generation",
+          "latency_ms": 2812,
+          "input_tokens": 908,
+          "output_tokens": 301,
+          "status": "succeeded"
+        }
+      ],
+      "delivery_observed_ms": 1776
+    }
+  ],
+  "historical_client_observation": {
+    "operation_id": "f13614fd-a2f8-43b5-80c7-4049c60ed8a5",
+    "received_at": "2026-10-04T14:28:02.120094Z",
+    "status": "done",
+    "api_calls": [
+      {
+        "type": "generation",
+        "latency_ms": 1094,
+        "input_tokens": 2828,
+        "output_tokens": 71,
+        "status": "succeeded"
+      },
+      {
+        "type": "embedding",
+        "latency_ms": 44,
+        "input_tokens": null,
+        "output_tokens": null,
+        "status": "succeeded"
+      },
+      {
+        "type": "generation",
+        "latency_ms": 3496,
+        "input_tokens": 899,
+        "output_tokens": 258,
+        "status": "succeeded"
+      }
+    ],
+    "e2e_ms": null,
+    "reason": "historical send/claim timestamps unavailable in old schema",
+    "telegram_message_at": "2026-10-04T14:27:17Z",
+    "first_api_started_at": "2026-10-04T14:28:02.944110Z",
+    "ingress_after_message_ms": 45120,
+    "pre_api_wait_ms": 824,
+    "reply_created_at": "2026-10-04T14:28:07.716127Z",
+    "delivery_status": "done",
+    "delivery_attempts": 1
+  },
+  "transport_errors": [
+    {
+      "at": "2026-10-04T14:27:16.764977Z",
+      "error": "ConnectTimeout"
+    },
+    {
+      "at": "2026-10-04T14:27:56.822765Z",
+      "error": "ConnectTimeout"
+    }
+  ],
+  "limitations": [
+    "Controlled samples bypass Telegram receiving; source-to-ingress is not measured for them.",
+    "Queue and completion were observed every250ms, not exact stage timestamps.",
+    "Historical actual delivery ack timestamp is unavailable."
+  ]
+}

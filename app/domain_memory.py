@@ -1,8 +1,8 @@
 """Persistent structured facts, semantic memory and restartable text-PDF indexing."""
 
 import asyncio
-import os
 import re
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -24,8 +24,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+from app.file_store import ManagedFiles, guarded_open, register_writer
 from app.models import Invocation, Job, Operation, now
-from app.queue import enqueue_text, require_lease
+from app.privacy import guard_operation
+from app.queue import enqueue_text
 from app.tools import ToolResult
 
 MAX_BYTES = 10 * 1024 * 1024
@@ -152,6 +154,7 @@ class SaveMemory:
         return await self.provider.embed(ctx.operation_id, args.text, "doc", ctx.lease)
 
     def apply(self, session, ctx, args, prepared):
+        guard_operation(session, ctx.operation_id, ctx.lease, context=True)
         if prepared is None:
             return ToolResult(
                 status="needs_clarification",
@@ -159,7 +162,9 @@ class SaveMemory:
                 user_message="Для сохранения факта явно попросите запомнить его.",
             )
         entry = session.scalar(
-            select(MemoryEntry).where(MemoryEntry.invocation_id == uuid.UUID(ctx.idempotency_key))
+            select(MemoryEntry)
+            .join(Invocation)
+            .where(Invocation.operation_id == ctx.operation_id, MemoryEntry.original == args.text)
         )
         if entry is None:
             entry = MemoryEntry(
@@ -207,6 +212,7 @@ class SearchMemory:
 
     async def prepare(self, ctx, args):
         query = await self.provider.embed(ctx.operation_id, args.query, "query", ctx.lease)
+        started = time.monotonic()
         with self.sessions() as session:
             entries = session.scalars(
                 select(MemoryEntry)
@@ -239,6 +245,7 @@ class SearchMemory:
                     )
                     .order_by(MemoryEntry.created_at, Fact.id)
                 ).all()
+        record_retrieval(self.sessions, ctx, started)
         return {
             "memory": [
                 {"id": str(e.id), "text": e.original, "source": e.source_text} for e in entries
@@ -256,6 +263,25 @@ class SearchMemory:
         }
 
     def apply(self, session, ctx, args, prepared):
+        guard_operation(session, ctx.operation_id, ctx.lease, context=True)
+        original_ids = {uuid.UUID(e["id"]) for e in prepared["memory"]}
+        available = set(
+            session.scalars(
+                select(MemoryEntry.id).where(
+                    MemoryEntry.owner_id == ctx.owner_id, MemoryEntry.id.in_(original_ids)
+                )
+            )
+        )
+        if available != original_ids or any(
+            uuid.UUID(f["entry_id"])
+            not in set(
+                session.scalars(select(MemoryEntry.id).where(MemoryEntry.owner_id == ctx.owner_id))
+            )
+            for f in prepared["facts"]
+        ):
+            from app.privacy import ContextChanged
+
+            raise ContextChanged()
         if not prepared["memory"] and not prepared["facts"]:
             return ToolResult(
                 status="ok",
@@ -308,65 +334,73 @@ class Documents:
                 return {"document_id": str(old.id), "duplicate": True}
         if not name.casefold().endswith(".pdf"):
             raise HTTPException(422, "Only text PDF is supported")
-        directory = self.config.file_directory
-        directory.mkdir(parents=True, exist_ok=True)
-        # Stable per-operation path makes a retry safe even after file publication.
-        final = directory / f"{op.id}.pdf"
-        temporary = directory / f"{op.id}.{uuid.uuid4()}.part"
+        temporary, final = register_writer(self.sessions, op.id, lease)
         size, prefix = 0, b""
-        try:
-            with temporary.open("wb") as handle:
-                while data := await stream.read(64 * 1024):
-                    size += len(data)
-                    if size > MAX_BYTES:
-                        raise HTTPException(413, "PDF exceeds 10 MiB")
-                    if not prefix:
-                        prefix = data[:5]
-                    handle.write(data)
-            if prefix != b"%PDF-":
-                raise HTTPException(422, "Invalid PDF header")
-            with self.sessions.begin() as session:
-                if lease:
-                    require_lease(session, Job, *lease)
-                locked = session.get(Operation, op.id, with_for_update=True)
-                if locked.owner_id != self.config.allowed_telegram_user_id:
-                    raise HTTPException(404, "Operation not found")
-                old = session.scalar(select(Document).where(Document.operation_id == op.id))
-                if old:
-                    return {"document_id": str(old.id), "duplicate": True}
-                os.replace(temporary, final)
-                document = Document(
-                    operation_id=op.id,
-                    owner_id=op.owner_id,
-                    name=Path(name).name[:200],
-                    file_path=str(final),
-                    size=size,
-                )
-                session.add(document)
-                session.flush()
-                locked.scenario = "pdf_index"
-                session.add(
-                    Job(
-                        key=f"document:{document.id}:index",
+        with ManagedFiles(self.config.file_directory) as files:
+            try:
+                with guarded_open(self.sessions, files, op.id, temporary, lease) as handle:
+                    while data := await stream.read(64 * 1024):
+                        size += len(data)
+                        if size > MAX_BYTES:
+                            raise HTTPException(413, "PDF exceeds 10 MiB")
+                        if not prefix:
+                            prefix = data[:5]
+                        handle.write(data)
+                if prefix != b"%PDF-":
+                    raise HTTPException(422, "Invalid PDF header")
+                with self.sessions.begin() as session:
+                    locked = guard_operation(session, op.id, lease)
+                    if locked.owner_id != self.config.allowed_telegram_user_id:
+                        raise HTTPException(404, "Operation not found")
+                    old = session.scalar(select(Document).where(Document.operation_id == op.id))
+                    if old:
+                        return {"document_id": str(old.id), "duplicate": True}
+                    files.replace(temporary, final)
+                    document = Document(
                         operation_id=op.id,
-                        kind="pdf_index",
-                        payload={"document_id": str(document.id)},
+                        owner_id=op.owner_id,
+                        name=Path(name).name[:200],
+                        file_path=str(self.config.file_directory / final),
+                        size=size,
                     )
-                )
-                return {"document_id": str(document.id)}
-        finally:
-            temporary.unlink(missing_ok=True)
+                    session.add(document)
+                    session.flush()
+                    locked.scenario = "pdf_index"
+                    session.add(
+                        Job(
+                            key=f"document:{document.id}:index",
+                            operation_id=op.id,
+                            kind="pdf_index",
+                            payload={"document_id": str(document.id)},
+                        )
+                    )
+                    return {"document_id": str(document.id)}
+            finally:
+                files.unlink(temporary)
 
     async def index(self, job, lease):
         document_id = uuid.UUID(job.payload["document_id"])
         with self.sessions() as session:
             document = session.get(Document, document_id)
+            if document is None:
+                from app.queue import LeaseLost
+
+                raise LeaseLost("document removed")
             if document.status in {"ready", "failed"}:
                 return
         try:
-            pages, texts = await asyncio.to_thread(extract_chunks, document.file_path)
+
+            def extract_managed():
+                with ManagedFiles(self.config.file_directory) as files:
+                    with self.sessions.begin() as session:
+                        guard_operation(session, job.operation_id, lease)
+                        handle = files.open_reader(f"{document.operation_id}.pdf")
+                    with handle:
+                        return extract_chunks(handle)
+
+            pages, texts = await asyncio.to_thread(extract_managed)
             with self.sessions.begin() as session:
-                require_lease(session, Job, *lease)
+                guard_operation(session, job.operation_id, lease)
                 row = session.get(Document, document_id)
                 row.status = "indexing"
                 row.pages = pages
@@ -383,7 +417,7 @@ class Documents:
                     continue
                 embedding = await self.provider.embed(job.operation_id, text, "doc", lease)
                 with self.sessions.begin() as session:
-                    require_lease(session, Job, *lease)
+                    guard_operation(session, job.operation_id, lease)
                     if not session.scalar(
                         select(Chunk.id).where(
                             Chunk.document_id == document_id,
@@ -403,14 +437,14 @@ class Documents:
                             )
                         )
             with self.sessions.begin() as session:
-                require_lease(session, Job, *lease)
+                guard_operation(session, job.operation_id, lease)
                 session.get(Document, document_id).status = "ready"
                 op = session.get(Operation, job.operation_id)
                 op.status = "done"
                 enqueue_text(
                     session,
                     op,
-                    f"PDF «{document.name}» проиндексирован, страниц: {pages}. "
+                    f"Документ «{document.name}» обработан, страниц: {pages}. "
                     "Можно задавать вопросы.",
                 )
         except Exception as exc:
@@ -424,7 +458,7 @@ class Documents:
                 else type(exc).__name__
             )
             with self.sessions.begin() as session:
-                require_lease(session, Job, *lease)
+                guard_operation(session, job.operation_id, lease)
                 row = session.get(Document, document_id)
                 row.status = "failed"
                 row.error_code = code
@@ -449,6 +483,7 @@ class SearchDocument:
         self.sessions, self.provider = sessions, provider
 
     async def prepare(self, ctx, args):
+        started = time.monotonic()
         with self.sessions() as session:
             statement = select(Document).where(Document.owner_id == ctx.owner_id)
             if args.document_id:
@@ -456,6 +491,7 @@ class SearchDocument:
             elif args.document_name:
                 statement = statement.where(Document.name == args.document_name)
             docs = session.scalars(statement).all()
+        record_retrieval(self.sessions, ctx, started)
         if len(docs) != 1:
             return ToolResult(
                 status="needs_clarification",
@@ -476,13 +512,13 @@ class SearchDocument:
             return ToolResult(
                 status="error",
                 presentation="canonical",
-                user_message="PDF ещё не проиндексирован или обработка завершилась ошибкой.",
+                user_message="Документ пока не готов для вопросов или его не удалось обработать.",
             )
         with self.sessions.begin() as session:
-            if ctx.lease:
-                require_lease(session, Job, *ctx.lease)
+            guard_operation(session, ctx.operation_id, ctx.lease, context=True)
             session.get(Operation, ctx.operation_id).parent_id = document.operation_id
         vector = await self.provider.embed(ctx.operation_id, args.query, "query", ctx.lease)
+        started = time.monotonic()
         with self.sessions() as session:
             chunks = session.scalars(
                 select(Chunk)
@@ -490,6 +526,7 @@ class SearchDocument:
                 .order_by(Chunk.embedding.cosine_distance(vector.vector))
                 .limit(5)
             ).all()
+        record_retrieval(self.sessions, ctx, started)
         if not chunks:
             return ToolResult(
                 status="ok",
@@ -513,4 +550,25 @@ class SearchDocument:
         )
 
     def apply(self, session, ctx, args, prepared):
+        guard_operation(session, ctx.operation_id, ctx.lease, context=True)
+        if prepared.sources:
+            found = set(
+                session.scalars(
+                    select(Chunk.id).where(
+                        Chunk.owner_id == ctx.owner_id,
+                        Chunk.id.in_([uuid.UUID(s["chunk_id"]) for s in prepared.sources]),
+                    )
+                )
+            )
+            if found != {uuid.UUID(s["chunk_id"]) for s in prepared.sources}:
+                from app.privacy import ContextChanged
+
+                raise ContextChanged()
         return prepared
+
+
+def record_retrieval(sessions, ctx, started):
+    duration = round((time.monotonic() - started) * 1000)
+    with sessions.begin() as session:
+        op = guard_operation(session, ctx.operation_id, ctx.lease, context=True)
+        op.retrieval_ms = (op.retrieval_ms or 0) + duration

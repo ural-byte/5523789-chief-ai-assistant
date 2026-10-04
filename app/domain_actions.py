@@ -4,14 +4,14 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, select
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, event, inspect, select
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.dates import DateSpec, resolve_date
 from app.db import Base
-from app.models import Invocation, Job, Operation, Outbox, now
-from app.queue import enqueue_text, require_lease
+from app.models import Invocation, Operation, Outbox, now
+from app.queue import enqueue_text
 from app.tools import ToolResult
 
 
@@ -37,6 +37,7 @@ class Approval(Base):
     owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
     chat_id: Mapped[int] = mapped_column(BigInteger)
     payload: Mapped[dict] = mapped_column(JSONB)
+    action_kind: Mapped[str] = mapped_column(String, default="meeting")
     status: Mapped[str] = mapped_column(String, default="pending")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -67,13 +68,20 @@ class CreateTask:
         return resolve_date(arguments.date, ctx.reference_at, ctx.timezone, source_text(ctx))
 
     def apply(self, session, ctx, arguments, prepared):
+        from app.privacy import guard_operation
+
+        guard_operation(session, ctx.operation_id, ctx.lease, context=True)
         deadline, question = prepared
         if question:
             return ToolResult(
                 status="needs_clarification", user_message=question, presentation="canonical"
             )
         row = session.scalar(
-            select(Task).where(Task.invocation_id == uuid.UUID(ctx.idempotency_key))
+            select(Task).where(
+                Task.operation_id == ctx.operation_id,
+                Task.text == arguments.text,
+                Task.deadline == deadline,
+            )
         )
         if row is None:
             row = Task(
@@ -105,13 +113,21 @@ class PrepareMeeting(CreateTask):
     )
 
     def apply(self, session, ctx, arguments, prepared):
+        from app.privacy import guard_operation
+
+        guard_operation(session, ctx.operation_id, ctx.lease, context=True)
         deadline, question = prepared
         if question:
             return ToolResult(
                 status="needs_clarification", user_message=question, presentation="canonical"
             )
         row = session.scalar(
-            select(Approval).where(Approval.invocation_id == uuid.UUID(ctx.idempotency_key))
+            select(Approval).where(
+                Approval.operation_id == ctx.operation_id,
+                Approval.action_kind == "meeting",
+                Approval.payload["title"].astext == arguments.text,
+                Approval.payload["at"].astext == deadline.isoformat(),
+            )
         )
         if row is None:
             row = Approval(
@@ -153,6 +169,9 @@ class PrepareMeeting(CreateTask):
 def scheduler_once(sessions, owner_id, timestamp=None):
     timestamp = timestamp or now()
     with sessions.begin() as session:
+        from app.privacy import owner_lock
+
+        owner_lock(session, owner_id)
         rows = session.scalars(
             select(Task)
             .where(Task.owner_id == owner_id, Task.status == "pending", Task.deadline <= timestamp)
@@ -171,6 +190,7 @@ def scheduler_once(sessions, owner_id, timestamp=None):
                         operation_id=row.operation_id,
                         kind="sendMessage",
                         payload={"chat_id": row.chat_id, "text": text},
+                        purpose="notification",
                     )
                 )
             row.status = "notified"
@@ -200,8 +220,17 @@ async def scheduler_loop(sessions, owner_id):
 async def handle_callback(sessions, job, lease):
     query = job.payload["callback_query"]
     with sessions.begin() as session:
-        require_lease(session, Job, *lease)
-        op = session.get(Operation, job.operation_id)
+        from app.privacy import guard_operation
+
+        op = guard_operation(session, job.operation_id, lease)
+        from app.memory_overview import memory_page, parse_cursor
+
+        cursor = parse_cursor(query.get("data"))
+        if cursor:
+            message, buttons = memory_page(session, op, cursor)
+            enqueue_text(session, op, message, buttons)
+            op.scenario, op.status = "memory_overview", "done"
+            return
         message = "Подтверждение недоступно."
         try:
             prefix, raw_id, choice = query.get("data", "").split(":")
@@ -229,7 +258,16 @@ async def handle_callback(sessions, job, lease):
             if row.status == "pending":
                 if choice == "n":
                     row.status = "cancelled"
-                    message = "Встреча отменена."
+                    message = (
+                        "Действие отменено."
+                        if row.action_kind == "data_deletion"
+                        else "Встреча отменена."
+                    )
+                elif row.action_kind == "data_deletion":
+                    from app.data_controls import fence_delete
+
+                    fence_delete(session, row)
+                    message = "Начал удаление. Сообщу, когда оно завершится."
                 else:
                     row.status = "approved"
                     row.approved_at = now()
@@ -242,9 +280,26 @@ async def handle_callback(sessions, job, lease):
             else:
                 message = {
                     "simulated": "Встреча уже выполнена в режиме симуляции.",
-                    "cancelled": "Встреча уже отменена.",
+                    "cancelled": (
+                        "Действие уже отменено."
+                        if row.action_kind == "data_deletion"
+                        else "Встреча уже отменена."
+                    ),
                     "expired": "Срок подтверждения истёк.",
+                    "executing": "Удаление продолжается. Сообщу, когда оно завершится.",
+                    "executed": "Данные уже удалены. Повторное удаление не выполняется.",
                 }.get(row.status, message)
+        from app.models import ApprovalAudit
+
+        if not session.get(ApprovalAudit, str(query["id"])):
+            session.add(
+                ApprovalAudit(
+                    callback_id=str(query["id"]),
+                    approval_id=row.id if row else None,
+                    operation_id=op.id,
+                    outcome=row.status if row else "unavailable",
+                )
+            )
         enqueue_text(session, op, message)
         key = f"callback:{query['id']}:answer"
         if not session.scalar(select(Outbox.id).where(Outbox.key == key)):
@@ -254,6 +309,23 @@ async def handle_callback(sessions, job, lease):
                     operation_id=op.id,
                     kind="answerCallbackQuery",
                     payload={"callback_query_id": query["id"], "text": message[:180]},
+                    purpose="callback",
                 )
             )
         op.status = "done"
+
+
+@event.listens_for(Approval, "before_update")
+def immutable_approval_payload(mapper, connection, target):
+    if any(
+        inspect(target).attrs[key].history.has_changes()
+        for key in (
+            "payload",
+            "owner_id",
+            "chat_id",
+            "action_kind",
+            "operation_id",
+            "invocation_id",
+        )
+    ):
+        raise ValueError("approval_payload_immutable")
