@@ -56,7 +56,7 @@ TEST_DATABASE_URL=postgresql+psycopg://assistant:assistant@localhost:5432/assist
 
 Тесты требуют отдельную настоящую PostgreSQL/pgvector БД с суффиксом `_test` и очищают её. CI проверяет lint и тесты с pgvector service. Lock-файлы закрепляют прямые и транзитивные зависимости.
 
-Утверждённый target — Kubernetes bigbang в РФ. Спеки и полный порядок запуска/обновления находятся в [deploy/recommended/kubernetes](deploy/recommended/kubernetes/README.md). Compose сохраняется для локального запуска. Kubernetes использует отдельные worker containers, постоянные PVC, migration init, health/heartbeat probes и Deployment Recreate. Инженерная проверка в кластере проводится после публикации image; клиентский вердикт фиксируется отдельно.
+Утверждённый target — Kubernetes bigbang в РФ. Спеки и полный порядок запуска/обновления находятся в [deploy/recommended/kubernetes](deploy/recommended/kubernetes/README.md). Compose сохраняется для локального запуска. Kubernetes использует отдельные worker containers, постоянные PVC, migration init, health/heartbeat probes и Deployment Recreate. Бот развёрнут в кластере; наблюдавшиеся результаты и точный image/source описаны в [deployment proof](docs/deployment/bigbang.md). Клиентский вердикт фиксируется отдельно.
 
 ## Поручения и подтверждения
 
