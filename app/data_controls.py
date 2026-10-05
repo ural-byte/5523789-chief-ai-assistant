@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import delete, select
 
 from app.domain_actions import Approval, Task
-from app.domain_memory import Chunk, Document, Entity, Fact, MemoryEntry, explicitly_requested
+from app.domain_memory import Chunk, Document, Entity, Fact, MemoryEntry
 from app.models import (
     ApprovalAudit,
     DeletionCleanup,
@@ -26,7 +26,7 @@ from app.models import (
     Update,
     now,
 )
-from app.privacy import guard_operation, owner_lock
+from app.privacy import fence_memory_writes, guard_operation, owner_lock
 from app.queue import enqueue_text
 from app.tools import ToolResult
 
@@ -118,7 +118,6 @@ def prepare_deletion(session, operation, invocation_id, scope, file_directory=No
                 scope == "memory"
                 and (
                     old_op.scenario in {"memory", "memory_overview"}
-                    or explicitly_requested(source)
                     or names & {"save_memory", "search_memory"}
                     or re.search(
                         r"\b(?:запомн\w*|памят\w*|помнишь|помнит\w*|помни)\b", source, re.I
@@ -302,6 +301,8 @@ def fence_delete(session, row):
     scope = p["scope"]
     state = owner_lock(session, owner)
     state.context_epoch += 1
+    if scope in {"memory", "reset"}:
+        fence_memory_writes(session, owner, captured, row.id)
     revoked = [uuid.UUID(i) for i in p["producer_ids"]]
     for op_id in revoked:
         key = f"operation:{op_id}"

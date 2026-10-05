@@ -1,0 +1,472 @@
+{
+  "role": "Checker",
+  "correction": 1,
+  "started_at_utc": "2026-10-05T07:57:26.229688+00:00",
+  "cases": [
+    {
+      "label": "native_original",
+      "protocol": "native",
+      "initial_registry_tools": 7,
+      "initial_reserve": 12658,
+      "operation_id": "c2aab81f-495f-4564-83c4-81f3f4e6d094",
+      "status": "done",
+      "input_spent": 13378,
+      "tool_names": [
+        "save_memory"
+      ],
+      "tool_statuses": [
+        "ok"
+      ],
+      "final_outbox_count": 1,
+      "nonblank_final": true,
+      "memory_entries": 1,
+      "facts": 1,
+      "generation_calls": 2,
+      "embedding_calls": 1,
+      "usage": [
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 3152,
+          "output": 130,
+          "embedding": null,
+          "latency_ms": 3461,
+          "cost": "1.0106000000",
+          "error_code": null
+        },
+        {
+          "type": "embedding",
+          "status": "succeeded",
+          "input": null,
+          "output": null,
+          "embedding": 14,
+          "latency_ms": 390,
+          "cost": "0.0001414000",
+          "error_code": null
+        },
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 563,
+          "output": 31,
+          "embedding": null,
+          "latency_ms": 1171,
+          "cost": "0.1844000000",
+          "error_code": null
+        }
+      ],
+      "wall_ms": 5376,
+      "retrieval": {
+        "operation_id": "d87e8c6c-abcd-42bb-b34b-facdcbb49beb",
+        "status": "done",
+        "input_spent": 13605,
+        "tool_names": [
+          "search_memory"
+        ],
+        "tool_statuses": [
+          "ok"
+        ],
+        "final_outbox_count": 1,
+        "nonblank_final": true,
+        "memory_entries": 1,
+        "facts": 1,
+        "generation_calls": 2,
+        "embedding_calls": 1,
+        "usage": [
+          {
+            "type": "generation",
+            "status": "succeeded",
+            "input": 3144,
+            "output": 99,
+            "embedding": null,
+            "latency_ms": 1907,
+            "cost": "0.9351000000",
+            "error_code": null
+          },
+          {
+            "type": "embedding",
+            "status": "succeeded",
+            "input": null,
+            "output": null,
+            "embedding": 14,
+            "latency_ms": 383,
+            "cost": "0.0001414000",
+            "error_code": null
+          },
+          {
+            "type": "generation",
+            "status": "succeeded",
+            "input": 650,
+            "output": 47,
+            "embedding": null,
+            "latency_ms": 1599,
+            "cost": "0.1609000000",
+            "error_code": null
+          }
+        ],
+        "wall_ms": 4233
+      },
+      "checks": {
+        "terminal_done": true,
+        "single_nonblank_final": true,
+        "budget": true,
+        "numeric_usage": true,
+        "saved": true,
+        "model_final": true,
+        "no_classifier_roundtrip": true,
+        "retrieved_fact": true,
+        "retrieval_terminal": true,
+        "factual_uuid_to_final_model": true
+      },
+      "passed": true,
+      "factual_projection_proofs": [
+        {
+          "status_ok": true,
+          "full_entry_id_uuid": true,
+          "entry_id_matches_database": true,
+          "request_budget": 2890,
+          "cumulative_budget": 13378,
+          "entry_id_length": 36
+        }
+      ],
+      "ordinary_prior_context_seeded": false
+    },
+    {
+      "label": "json_original",
+      "protocol": "json",
+      "initial_registry_tools": 7,
+      "initial_reserve": 14376,
+      "operation_id": "ee0efd3a-d771-4d6e-b18a-79443811c066",
+      "status": "done",
+      "input_spent": 15007,
+      "tool_names": [
+        "save_memory"
+      ],
+      "tool_statuses": [
+        "ok"
+      ],
+      "final_outbox_count": 1,
+      "nonblank_final": true,
+      "memory_entries": 1,
+      "facts": 1,
+      "generation_calls": 2,
+      "embedding_calls": 1,
+      "usage": [
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 2545,
+          "output": 143,
+          "embedding": null,
+          "latency_ms": 2181,
+          "cost": "0.8350000000",
+          "error_code": null
+        },
+        {
+          "type": "embedding",
+          "status": "succeeded",
+          "input": null,
+          "output": null,
+          "embedding": 13,
+          "latency_ms": 386,
+          "cost": "0.0001313000",
+          "error_code": null
+        },
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 590,
+          "output": 113,
+          "embedding": null,
+          "latency_ms": 2008,
+          "cost": "0.2335000000",
+          "error_code": null
+        }
+      ],
+      "wall_ms": 4946,
+      "retrieval": {
+        "operation_id": "45eeed39-6fc7-4321-907d-48295403ee06",
+        "status": "done",
+        "input_spent": 15263,
+        "tool_names": [
+          "search_memory"
+        ],
+        "tool_statuses": [
+          "ok"
+        ],
+        "final_outbox_count": 1,
+        "nonblank_final": true,
+        "memory_entries": 1,
+        "facts": 1,
+        "generation_calls": 2,
+        "embedding_calls": 1,
+        "usage": [
+          {
+            "type": "generation",
+            "status": "succeeded",
+            "input": 2537,
+            "output": 65,
+            "embedding": null,
+            "latency_ms": 1871,
+            "cost": "0.2752000000",
+            "error_code": null
+          },
+          {
+            "type": "embedding",
+            "status": "succeeded",
+            "input": null,
+            "output": null,
+            "embedding": 11,
+            "latency_ms": 382,
+            "cost": "0.0001111000",
+            "error_code": null
+          },
+          {
+            "type": "generation",
+            "status": "succeeded",
+            "input": 696,
+            "output": 71,
+            "embedding": null,
+            "latency_ms": 1710,
+            "cost": "0.2443000000",
+            "error_code": null
+          }
+        ],
+        "wall_ms": 4374
+      },
+      "checks": {
+        "terminal_done": true,
+        "single_nonblank_final": true,
+        "budget": true,
+        "numeric_usage": true,
+        "saved": true,
+        "model_final": true,
+        "no_classifier_roundtrip": true,
+        "retrieved_fact": true,
+        "retrieval_terminal": true,
+        "factual_uuid_to_final_model": true
+      },
+      "passed": true,
+      "factual_projection_proofs": [
+        {
+          "status_ok": true,
+          "full_entry_id_uuid": true,
+          "entry_id_matches_database": true,
+          "request_budget": 3054,
+          "cumulative_budget": 15007,
+          "entry_id_length": 36
+        }
+      ],
+      "ordinary_prior_context_seeded": false
+    },
+    {
+      "label": "json_semantic_after_context",
+      "protocol": "json",
+      "initial_registry_tools": 7,
+      "initial_reserve": 14516,
+      "operation_id": "05c3bf49-b219-471e-9628-5043216dd111",
+      "status": "done",
+      "input_spent": 15149,
+      "tool_names": [
+        "save_memory"
+      ],
+      "tool_statuses": [
+        "ok"
+      ],
+      "final_outbox_count": 1,
+      "nonblank_final": true,
+      "memory_entries": 1,
+      "facts": 1,
+      "generation_calls": 2,
+      "embedding_calls": 1,
+      "usage": [
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 2556,
+          "output": 174,
+          "embedding": null,
+          "latency_ms": 2730,
+          "cost": "0.3354000000",
+          "error_code": null
+        },
+        {
+          "type": "embedding",
+          "status": "succeeded",
+          "input": null,
+          "output": null,
+          "embedding": 14,
+          "latency_ms": 385,
+          "cost": "0.0001414000",
+          "error_code": null
+        },
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 607,
+          "output": 142,
+          "embedding": null,
+          "latency_ms": 2690,
+          "cost": "0.1955000000",
+          "error_code": null
+        }
+      ],
+      "wall_ms": 6119,
+      "retrieval": {
+        "operation_id": "ceb7ec7a-bb04-4460-8a82-0340d6f959de",
+        "status": "done",
+        "input_spent": 15404,
+        "tool_names": [
+          "search_memory"
+        ],
+        "tool_statuses": [
+          "ok"
+        ],
+        "final_outbox_count": 1,
+        "nonblank_final": true,
+        "memory_entries": 1,
+        "facts": 1,
+        "generation_calls": 2,
+        "embedding_calls": 1,
+        "usage": [
+          {
+            "type": "generation",
+            "status": "succeeded",
+            "input": 2537,
+            "output": 79,
+            "embedding": null,
+            "latency_ms": 2076,
+            "cost": "0.2822000000",
+            "error_code": null
+          },
+          {
+            "type": "embedding",
+            "status": "succeeded",
+            "input": null,
+            "output": null,
+            "embedding": 11,
+            "latency_ms": 380,
+            "cost": "0.0001111000",
+            "error_code": null
+          },
+          {
+            "type": "generation",
+            "status": "succeeded",
+            "input": 728,
+            "output": 95,
+            "embedding": null,
+            "latency_ms": 2197,
+            "cost": "0.2083000000",
+            "error_code": null
+          }
+        ],
+        "wall_ms": 5001
+      },
+      "checks": {
+        "terminal_done": true,
+        "single_nonblank_final": true,
+        "budget": true,
+        "numeric_usage": true,
+        "saved": true,
+        "model_final": true,
+        "no_classifier_roundtrip": true,
+        "retrieved_fact": true,
+        "retrieval_terminal": true,
+        "factual_uuid_to_final_model": true
+      },
+      "passed": true,
+      "factual_projection_proofs": [
+        {
+          "status_ok": true,
+          "full_entry_id_uuid": true,
+          "entry_id_matches_database": true,
+          "request_budget": 3126,
+          "cumulative_budget": 15149,
+          "entry_id_length": 36
+        }
+      ],
+      "ordinary_prior_context_seeded": true
+    },
+    {
+      "label": "json_negative",
+      "protocol": "json",
+      "initial_registry_tools": 7,
+      "initial_reserve": 14380,
+      "operation_id": "7bea1cfe-2ba5-4ad8-bab5-278ccd49cf2d",
+      "status": "done",
+      "input_spent": 11955,
+      "tool_names": [],
+      "tool_statuses": [],
+      "final_outbox_count": 1,
+      "nonblank_final": true,
+      "memory_entries": 0,
+      "facts": 0,
+      "generation_calls": 1,
+      "embedding_calls": 0,
+      "usage": [
+        {
+          "type": "generation",
+          "status": "succeeded",
+          "input": 2544,
+          "output": 56,
+          "embedding": null,
+          "latency_ms": 1691,
+          "cost": "0.2728000000",
+          "error_code": null
+        }
+      ],
+      "wall_ms": 1779,
+      "checks": {
+        "terminal_done": true,
+        "single_nonblank_final": true,
+        "budget": true,
+        "numeric_usage": true,
+        "no_new_memory": true,
+        "no_mutation_tool": true
+      },
+      "passed": true,
+      "ordinary_prior_context_seeded": false
+    }
+  ],
+  "source": {
+    "before": {
+      "files": 40,
+      "mismatches": []
+    },
+    "after": {
+      "files": 40,
+      "mismatches": []
+    }
+  },
+  "finished_at_utc": "2026-10-05T07:57:58.779221+00:00",
+  "passed": true,
+  "environment": "isolated disposable PostgreSQL; actual Yandex; no production Telegram updates",
+  "pricing_evidence": "Recorded estimated costs only. Applied model/pricing snapshots, cached/tool tokens and cost completeness were not exported before disposable DB reset; they are unknown here. These costs are not declared complete.",
+  "source_manifest": {
+    "app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/api.py": "34c6f315acfecb034f64c3477c626c219353d27bafd03311573ab4845cc27a2a",
+    "app/bootstrap.py": "5780ec70eb1805d9e728c6be033520e3e95c3d0e7385eb97b4ec816c6bc5ccde",
+    "app/config.py": "e6a5be5ac80834707687ba0bb41665d3530eb212aaf9e374cf0d0d2dd3ee386e",
+    "app/data_controls.py": "d27182d6b436ec44e9de739887373265fb925f1ee61febbd9c3c35ca35115554",
+    "app/dates.py": "851f624beb17c838feda6c7f26152723711c673ecdaa4455613a893d0a683141",
+    "app/db.py": "af6436d3c3ac04a315df55537ba642dc16f84fff24e6b89e029b8d9d96221c5b",
+    "app/document_download.py": "988edb8d5d3cd064f5a1cb16a2122b1e21f4784babaafdba48df3080259f52af",
+    "app/domain_actions.py": "093ee7d71a84a6137b27d9b82f241fb57b5c6d413d794566485747cd8e51eba8",
+    "app/domain_memory.py": "dd8045e7a5ff18b1b0eb5defb5506727882d518e3e596b016ec975e623e7764e",
+    "app/file_store.py": "1fc72d1a90c7137a499ffdd6e09b095484c11999fd0abdc3317d1f74cd7012c1",
+    "app/health.py": "c4cdc5c4d1ca38907605edd636bc5265a50d203b34751390226aac40217910ec",
+    "app/latency.py": "c5a57a8e818bc047f540ffe66acb714f5e63504f6ef4ae5faba6a07faeb39519",
+    "app/memory_overview.py": "279fe76f5c1f5f201b7a95f1da47e825ff12fbf3052da6b3f4e75c234a571cf2",
+    "app/memory_resolution.py": "11645bb39082612a3b9b650be051c8160aa7b04395229010e961f4e5e65184b4",
+    "app/models.py": "dd06e584fb3ff7480e17b799e0271773ab47235bc72fc5f46f20370dd18e223a",
+    "app/pricing.py": "74e23ff439baea1b4683810163f8554be90d8fc4f2c1f6ca9a3a89d90dd9a87f",
+    "app/privacy.py": "e8048bd065c825c2607bdd925d611f6304f884f392771d48005a97665b08f249",
+    "app/providers.py": "ac15963d163389e3a09d952a13bce52826ae88508c26ad0fa21ca21711410ee4",
+    "app/queue.py": "6c1373439b0d18fb8334492897f727b7ba22da3c80c43659d5c15a78ab08872a",
+    "app/runtime.py": "da4da8c462b9633181d0c6372470eebb66e77c4318e65481b0a936bd00409b35",
+    "app/supervisor.py": "95815527380927c54bf90a53a76bf99128a0155e05337b4835eca36643fed8bc",
+    "app/terminal.py": "bfc7d6342fb4e4d29a766378072cd115c65f97762e32df9abf013f021f4bc598",
+    "app/tools.py": "18027eeb8ccadf392239d4dfd9563ca67e1dacf9dc95e7df8457bb5cf37aae3e",
+    "app/workers.py": "a464601ce9e37e8ac4ad0bfcccaabe5726eaebfdaad5a23858280b9793bb5ea8"
+  }
+}
