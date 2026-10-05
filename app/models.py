@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
@@ -43,6 +43,13 @@ class Operation(Base):
     final_delivery_ack_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     retrieval_ms: Mapped[int | None] = mapped_column(Integer)
     agent_loop_ms: Mapped[int | None] = mapped_column(Integer)
+    deadline_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: now() + timedelta(seconds=90)
+    )
+    terminal_revision: Mapped[int] = mapped_column(Integer, default=0)
+    delivery_state: Mapped[str] = mapped_column(String, default="pending")
+    error_reason: Mapped[str | None] = mapped_column(String)
+    recovery_created: Mapped[bool] = mapped_column(default=False)
 
 
 class UserState(Base):
@@ -57,6 +64,25 @@ class Tombstone(Base):
     owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
     approval_id: Mapped[uuid.UUID] = mapped_column(UUID)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class MemoryContext(Base):
+    __tablename__ = "memory_contexts"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    operation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(Operation.id), index=True)
+    invocation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invocations.id"), unique=True)
+    owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger)
+    context_epoch: Mapped[int] = mapped_column(Integer)
+    entries: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class ApprovalPreview(Base):
+    __tablename__ = "approval_previews"
+    approval_id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    text: Mapped[str] = mapped_column(String)
 
 
 class FileIntent(Base):
@@ -137,6 +163,12 @@ class Outbox(QueueItem):
     purpose: Mapped[str] = mapped_column(String, default="final")
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     send_latency_ms: Mapped[int | None] = mapped_column(Integer)
+    delivery_deadline_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: now() + timedelta(seconds=60)
+    )
+    terminal_revision: Mapped[int] = mapped_column(Integer, default=0)
+    failure_class: Mapped[str | None] = mapped_column(String)
+    terminal_failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class AICall(Base):

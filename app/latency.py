@@ -21,6 +21,7 @@ def update_delivery(session, operation):
         select(Outbox).where(
             Outbox.operation_id == operation.id,
             Outbox.purpose == "final",
+            Outbox.terminal_revision == operation.terminal_revision,
             Outbox.kind == "sendMessage",
         )
     ).all()
@@ -29,6 +30,7 @@ def update_delivery(session, operation):
         and rows
         and all(r.status == "done" and r.acknowledged_at for r in rows)
     ):
+        operation.delivery_state = "delivered"
         operation.final_delivery_ack_at = max(r.acknowledged_at for r in rows)
         cancel_progress(session, operation)
 
@@ -54,6 +56,10 @@ def operation_latency(session, operation):
         "operation_id": str(operation.id),
         "scenario": operation.scenario,
         "status": operation.status,
+        "error_reason": operation.error_reason,
+        "terminal_revision": operation.terminal_revision,
+        "delivery_state": operation.delivery_state,
+        "deadline_at": operation.deadline_at,
         "source_message_at": operation.source_message_at,
         "received_at": operation.received_at,
         "first_started_at": operation.first_started_at,

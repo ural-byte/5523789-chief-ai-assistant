@@ -1,0 +1,277 @@
+{
+  "schema": "uralbyte9-actual-defect-v1",
+  "sampled_at": "2026-10-04 17:27:22.124124+00:00",
+  "executable_revision": "d39e998845b6e105f88e9dcd92827143ef4023b6",
+  "operation": {
+    "operation_id": "29f20a30-4cb8-4be7-8ae2-dc5d88ed0ebe",
+    "update_is_genuine": true,
+    "category": "selection",
+    "status": "done",
+    "scenario": "memory",
+    "received_at": "2026-10-04 17:19:54.235176+00:00",
+    "first_started_at": "2026-10-04 17:19:54.994524+00:00",
+    "processing_finished_at": "2026-10-04 17:20:01.844182+00:00",
+    "first_feedback_at": "2026-10-04 17:19:58.723553+00:00",
+    "final_delivery_ack_at": null,
+    "tool_steps": 1,
+    "input_spent": 14962,
+    "history_rows": 4,
+    "jobs": [
+      {
+        "id": "5f0ee36c-f916-4bee-9d6f-d909887defc6",
+        "kind": "agent",
+        "status": "done",
+        "attempts": 1,
+        "available_at": "2026-10-04 17:19:54.237235+00:00",
+        "lease_until": null,
+        "error_code": null
+      }
+    ],
+    "ai_calls": [
+      {
+        "id": "f83100bd-5768-4ddb-803f-744ac8e32b36",
+        "type": "generation",
+        "started_at": "2026-10-04 17:19:55.041782+00:00",
+        "status": "succeeded",
+        "latency_ms": 1310,
+        "error_code": null
+      },
+      {
+        "id": "b3db1ea6-d48d-442f-a99d-903aba453b2e",
+        "type": "embedding",
+        "started_at": "2026-10-04 17:19:56.390554+00:00",
+        "status": "succeeded",
+        "latency_ms": 54,
+        "error_code": null
+      },
+      {
+        "id": "6b52609f-0ad4-4392-af43-63d0e3b63749",
+        "type": "generation",
+        "started_at": "2026-10-04 17:19:56.509826+00:00",
+        "status": "succeeded",
+        "latency_ms": 5144,
+        "error_code": null
+      }
+    ],
+    "tools": [
+      {
+        "id": "8f80bbee-4ce5-4b31-a3ba-cd92902a9c84",
+        "name": "search_memory",
+        "argument_keys": [
+          "query"
+        ],
+        "result_status": "ok",
+        "result_keys": [
+          "buttons",
+          "data",
+          "presentation",
+          "sources",
+          "status",
+          "user_message"
+        ]
+      }
+    ],
+    "outbox": [
+      {
+        "id": "1a94cc4c-cfd1-48cb-82a3-b3ddcf435f42",
+        "purpose": "final",
+        "kind": "sendMessage",
+        "status": "pending",
+        "attempts": 8,
+        "error_code": "telegram_send_failed",
+        "acknowledged_at": null
+      },
+      {
+        "id": "fe3e02fb-d79c-4020-aceb-fbb62c842a3e",
+        "purpose": "progress",
+        "kind": "sendMessage",
+        "status": "done",
+        "attempts": 1,
+        "error_code": null,
+        "acknowledged_at": "2026-10-04 17:20:07.191548+00:00"
+      }
+    ],
+    "approvals": []
+  },
+  "payload_shape": [
+    {
+      "id": "1a94cc4c-cfd1-48cb-82a3-b3ddcf435f42",
+      "purpose": "final",
+      "status": "pending",
+      "payload_keys": [
+        "chat_id",
+        "text"
+      ],
+      "text_chars": 2,
+      "text_stripped_chars": 0,
+      "text_utf16_units": 2,
+      "text_utf8_bytes": 2,
+      "text_sha256": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "control_chars": 0,
+      "has_buttons": false,
+      "parse_mode": null
+    },
+    {
+      "id": "fe3e02fb-d79c-4020-aceb-fbb62c842a3e",
+      "purpose": "progress",
+      "status": "done",
+      "payload_keys": [
+        "chat_id",
+        "text"
+      ],
+      "text_chars": 40,
+      "text_stripped_chars": 40,
+      "text_utf16_units": 40,
+      "text_utf8_bytes": 75,
+      "text_sha256": "7f1a9b03082bcf791978d4fbab9010e251b7b8a12e05a22798289928d2356967",
+      "control_chars": 0,
+      "has_buttons": false,
+      "parse_mode": null
+    }
+  ],
+  "history_shape": [
+    {
+      "role": "user",
+      "has_content": true,
+      "content_chars": 48,
+      "tool_calls": 0
+    },
+    {
+      "role": "assistant",
+      "has_content": true,
+      "content_chars": 2,
+      "tool_calls": 1
+    },
+    {
+      "role": "tool",
+      "has_content": true,
+      "content_chars": 980,
+      "tool_calls": 0
+    },
+    {
+      "role": "assistant",
+      "has_content": true,
+      "content_chars": 2,
+      "tool_calls": 0
+    }
+  ],
+  "telegram_validation": {
+    "sampled_at": "2026-10-04 17:35:49.980899+00:00",
+    "operation_id": "29f20a30-4cb8-4be7-8ae2-dc5d88ed0ebe",
+    "validation_method": "one request with existing whitespace-only payload; no normal user content replayed",
+    "telegram": {
+      "api_http_status": 400,
+      "api_ok": false,
+      "api_error_code": 400,
+      "api_reason": "Bad Request: text must be non-empty",
+      "elapsed_ms": 270
+    },
+    "usage": [
+      {
+        "type": "generation",
+        "status": "succeeded",
+        "latency_ms": 1310,
+        "input_tokens": 3002,
+        "output_tokens": 199,
+        "extra_usage": {
+          "total_tokens": 3201,
+          "prompt_tokens": 3002,
+          "completion_tokens": 199,
+          "prompt_tokens_details.cached_tokens": 256,
+          "completion_tokens_details.reasoning_tokens": 158
+        }
+      },
+      {
+        "type": "embedding",
+        "status": "succeeded",
+        "latency_ms": 54,
+        "input_tokens": null,
+        "output_tokens": null,
+        "extra_usage": {
+          "total_tokens": 14,
+          "prompt_tokens": 14,
+          "prompt_tokens_details.cached_tokens": 0
+        }
+      },
+      {
+        "type": "generation",
+        "status": "succeeded",
+        "latency_ms": 5144,
+        "input_tokens": 845,
+        "output_tokens": 607,
+        "extra_usage": {
+          "total_tokens": 1452,
+          "prompt_tokens": 845,
+          "completion_tokens": 607,
+          "prompt_tokens_details.cached_tokens": 256,
+          "completion_tokens_details.reasoning_tokens": 479
+        }
+      }
+    ]
+  },
+  "conflict_context_shape": {
+    "sampled_at": "2026-10-04 17:38:19.381924+00:00",
+    "rows": [
+      {
+        "operation_id": "ee3c98f9-8f67-4b6d-83e1-c31d2442d7d3",
+        "tools": [
+          {
+            "name": "search_memory",
+            "memory_count": 2,
+            "fact_count": 1,
+            "conflict_groups": 0
+          }
+        ],
+        "fact_shape": [
+          {
+            "entry_id": "7ed125ae-fef5-4ae6-9f5c-12b3445ed4c4",
+            "entity_group": 1,
+            "predicate_group": 1,
+            "value_group": 1
+          }
+        ],
+        "reply_conflict_word_present": true,
+        "reply_requests_current_version": false
+      },
+      {
+        "operation_id": "29f20a30-4cb8-4be7-8ae2-dc5d88ed0ebe",
+        "tools": [
+          {
+            "name": "search_memory",
+            "memory_count": 2,
+            "fact_count": 3,
+            "conflict_groups": 0
+          }
+        ],
+        "fact_shape": [
+          {
+            "entry_id": "2e31d922-f598-4bdb-b32d-1ace335d9fed",
+            "entity_group": 1,
+            "predicate_group": 1,
+            "value_group": 1
+          },
+          {
+            "entry_id": "2e31d922-f598-4bdb-b32d-1ace335d9fed",
+            "entity_group": 1,
+            "predicate_group": 2,
+            "value_group": 2
+          },
+          {
+            "entry_id": "7ed125ae-fef5-4ae6-9f5c-12b3445ed4c4",
+            "entity_group": 2,
+            "predicate_group": 3,
+            "value_group": 3
+          }
+        ],
+        "reply_conflict_word_present": false,
+        "reply_requests_current_version": false
+      }
+    ]
+  },
+  "db_blockers_present": false,
+  "limitations": [
+    "Diagnostic snapshots do not include private message, memory or fact content.",
+    "Provider raw finish_reason was not stored; no assumption of token-limit exhaustion is made.",
+    "The validation attempt contained only the already invalid whitespace-only text, no normal user response or destructive callback."
+  ]
+}

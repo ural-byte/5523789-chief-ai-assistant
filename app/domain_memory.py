@@ -25,8 +25,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 from app.file_store import ManagedFiles, guarded_open, register_writer
-from app.models import Invocation, Job, Operation, now
-from app.privacy import guard_operation
+from app.models import Invocation, Job, Operation, Update, now
+from app.privacy import guard_invocation, guard_operation
 from app.queue import enqueue_text
 from app.tools import ToolResult
 
@@ -141,20 +141,26 @@ class SaveMemory:
         self.sessions, self.provider = sessions, provider
 
     async def prepare(self, ctx, args):
-        source = ctx.source_update.get("message", {}).get("text", "")
-        if not explicitly_requested(source):
-            return None
-        with self.sessions() as session:
+        with self.sessions.begin() as session:
+            op = guard_invocation(session, ctx)
             if session.scalar(
                 select(MemoryEntry.id).where(
                     MemoryEntry.invocation_id == uuid.UUID(ctx.idempotency_key)
                 )
             ):
                 return "existing"
+            update = session.get(Update, op.update_id) if op.update_id is not None else None
+            source = (
+                update.payload.get("message", {}).get("text", "")
+                if update
+                else ctx.source_update.get("message", {}).get("text", "")
+            )
+            if not explicitly_requested(source):
+                return None
         return await self.provider.embed(ctx.operation_id, args.text, "doc", ctx.lease)
 
     def apply(self, session, ctx, args, prepared):
-        guard_operation(session, ctx.operation_id, ctx.lease, context=True)
+        op = guard_invocation(session, ctx)
         if prepared is None:
             return ToolResult(
                 status="needs_clarification",
@@ -167,12 +173,26 @@ class SaveMemory:
             .where(Invocation.operation_id == ctx.operation_id, MemoryEntry.original == args.text)
         )
         if entry is None:
+            update = session.get(Update, op.update_id) if op.update_id is not None else None
+            source = (
+                update.payload.get("message", {}).get("text", "")
+                if update
+                else ctx.source_update.get("message", {}).get("text", "")
+            )
+            if not explicitly_requested(source):
+                return ToolResult(
+                    status="needs_clarification",
+                    presentation="canonical",
+                    user_message="Для сохранения факта явно попросите запомнить его.",
+                )
             entry = MemoryEntry(
                 invocation_id=uuid.UUID(ctx.idempotency_key),
                 owner_id=ctx.owner_id,
                 original=args.text,
-                source_text=ctx.source_update.get("message", {}).get("text", ""),
-                source_update_id=ctx.source_update.get("update_id"),
+                source_text=source,
+                source_update_id=op.update_id
+                if op.update_id is not None
+                else ctx.source_update.get("update_id"),
                 embedding=prepared.vector,
                 embedding_model=prepared.model,
             )
@@ -252,6 +272,7 @@ class SearchMemory:
             ],
             "facts": [
                 {
+                    "fact_id": str(f.id),
                     "entity": ent.name,
                     "predicate": f.predicate,
                     "value": f.value,
@@ -288,6 +309,16 @@ class SearchMemory:
                 presentation="canonical",
                 user_message="Сохранённых сведений по этому запросу нет.",
             )
+        from app.memory_resolution import remember_context
+
+        op = session.get(Operation, ctx.operation_id)
+        context = remember_context(
+            session,
+            op,
+            uuid.UUID(ctx.idempotency_key),
+            original_ids | {uuid.UUID(f["entry_id"]) for f in prepared["facts"]},
+        )
+        prepared["context_id"] = str(context.id)
         groups = {}
         for fact in prepared["facts"]:
             groups.setdefault((fact["entity"], fact["predicate"]), []).append(fact)

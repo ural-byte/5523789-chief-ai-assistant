@@ -1,6 +1,7 @@
 """Owner serialization and publication fences for data controls."""
 
-from sqlalchemy import select, text
+from sqlalchemy import event, select, text
+from sqlalchemy.orm import Session
 
 from app.models import History, Invocation, Job, Operation, Tombstone, Update, UserState
 from app.queue import LeaseLost
@@ -28,10 +29,16 @@ def guard_operation(session, operation_id, lease=None, context=False):
         raise LeaseLost("operation missing")
     state = owner_lock(session, op.owner_id)
     session.refresh(op)
-    if session.get(Tombstone, f"operation:{op.id}") or op.status == "cancelled":
+    if session.get(Tombstone, f"operation:{op.id}") or op.status == "cancelled" or op.error_reason:
         raise LeaseLost("operation revoked")
     if lease:
         require_lease(session, Job, *lease)
+    from app.terminal import ExecutionExpired
+
+    timestamp = session.scalar(text("SELECT clock_timestamp()"))
+    if op.deadline_at <= timestamp:
+        raise ExecutionExpired()
+    session.info.setdefault("execution_guards", {})[op.id] = (op.deadline_at, op.terminal_revision)
     if context and op.context_epoch != state.context_epoch:
         raise ContextChanged()
     return op
@@ -49,6 +56,9 @@ def rebuild_context(session, operation_id, lease=None, protocol="native"):
     ).all()
     retained = []
     for row in invocations:
+        if session.get(Tombstone, f"invocation:{row.id}"):
+            row.arguments, row.result, row.model_result = {}, {}, {}
+            continue
         if (
             row.name in {"create_task", "prepare_meeting", "save_memory", "prepare_data_deletion"}
             and row.result
@@ -102,3 +112,31 @@ def rebuild_context(session, operation_id, lease=None, protocol="native"):
         )
     op.context_epoch = state.context_epoch
     op.tool_steps = len(retained)
+
+
+@event.listens_for(Session, "before_commit")
+@event.listens_for(Session, "after_flush_postexec")
+def remaining_commit_budget(session, flush_context=None):
+    from app.terminal import ExecutionExpired
+
+    for operation_id, (deadline, revision) in session.info.get("execution_guards", {}).items():
+        timestamp = session.scalar(text("SELECT clock_timestamp()"))
+        if deadline <= timestamp:
+            raise ExecutionExpired()
+        op = session.get(Operation, operation_id)
+        if op.terminal_revision != revision or op.error_reason:
+            raise LeaseLost("operation retired")
+        milliseconds = max(1, min(5000, int((deadline - timestamp).total_seconds() * 1000)))
+        session.execute(
+            text("SELECT set_config('statement_timeout', :budget, true)"),
+            {"budget": str(milliseconds)},
+        )
+
+
+def guard_invocation(session, ctx):
+    op = guard_operation(session, ctx.operation_id, ctx.lease)
+    if session.get(Tombstone, f"invocation:{ctx.idempotency_key}"):
+        raise LeaseLost("invocation retired")
+    if op.context_epoch != session.get(UserState, op.owner_id).context_epoch:
+        raise ContextChanged()
+    return op

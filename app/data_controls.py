@@ -348,6 +348,10 @@ def fence_delete(session, row):
             (MemoryEntry.id.in_([uuid.UUID(i) for i in p["memory_ids"]]))
             | MemoryEntry.invocation_id.in_(invocation_ids),
         )
+        from app.memory_resolution import scrub_references
+
+        retired_ids = set(session.scalars(entries))
+        scrub_references(session, owner, retired_ids, row.id, current=row.id)
         session.execute(delete(Fact).where(Fact.entry_id.in_(entries)))
         session.execute(delete(MemoryEntry).where(MemoryEntry.id.in_(entries)))
         session.execute(

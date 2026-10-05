@@ -9,6 +9,7 @@ from app.models import AICall, History, Invocation, Operation, Update
 from app.privacy import ContextChanged, guard_operation, rebuild_context
 from app.providers import MAX_INPUT, BudgetExceeded, ProviderError
 from app.queue import enqueue_text
+from app.terminal import ExecutionExpired, InvalidFinal, nonblank
 from app.tools import ToolContext, ToolResult
 
 SYSTEM = (
@@ -26,6 +27,8 @@ SYSTEM = (
     "Встреча выполняется только после approval и только в режиме симуляции. "
     "Удаление памяти, документов и сброс данных сначала подготавливаются через "
     "prepare_data_deletion и всегда требуют явного подтверждения кнопкой. "
+    "Для выбора актуальной версии показанной памяти используй prepare_memory_resolution; "
+    "укажи selector и context_id, всегда требуется подтверждение. "
     "Для управления данными доступны /memory, /clear_memory, /delete_documents, /reset. "
     "Объясняй ограничения как возможности продукта, без названий инструментов, backend, "
     "очередей и хранилищ. Не выдумывай выполненные действия."
@@ -199,7 +202,13 @@ class Runtime:
         return messages
 
     async def _invoke(self, operation, invocation, messages, lease):
-        with self.sessions() as session:
+        with self.sessions.begin() as session:
+            self._guard(session, lease, operation.id)
+            from app.models import Tombstone
+            from app.queue import LeaseLost
+
+            if session.get(Tombstone, f"invocation:{invocation.id}"):
+                raise LeaseLost("invocation retired")
             source = session.get(Update, operation.update_id) if operation.update_id else None
         ctx = ToolContext(
             operation.owner_id,
@@ -308,6 +317,29 @@ class Runtime:
                 except ContextChanged:
                     with self.sessions.begin() as session:
                         rebuild_context(session, operation_id, lease, self.protocol)
+        except (InvalidFinal, ExecutionExpired) as exc:
+            from app.terminal import terminal_error
+
+            with self.sessions.begin() as session:
+                operation = session.get(Operation, operation_id)
+                owner_lock(session, operation.owner_id)
+                if isinstance(exc, InvalidFinal):
+                    event = session.scalar(
+                        select(AICall)
+                        .where(
+                            AICall.operation_id == operation_id,
+                            AICall.operation_type == "generation",
+                        )
+                        .order_by(AICall.started_at.desc())
+                        .limit(1)
+                    )
+                    if event:
+                        event.status, event.error_code = "error", "invalid_final"
+                terminal_error(
+                    session,
+                    operation,
+                    "invalid_final" if isinstance(exc, InvalidFinal) else "deadline",
+                )
         except ProviderError:
             with self.sessions.begin() as session:
                 self._guard(session, lease, operation_id)
@@ -440,8 +472,8 @@ class Runtime:
                         visible_text = grounded_answer(response.text, grounded["sources"])
                     footer = conflict_footer([row.result for row in last])
                     visible_text += footer
-                    if canonical and not visible_text:
-                        raise ProviderError("missing_canonical_approval_summary")
+                    if not nonblank(visible_text):
+                        raise InvalidFinal()
                     if not canonical or canonical.get("presentation") != "canonical":
                         enqueue_text(
                             session,

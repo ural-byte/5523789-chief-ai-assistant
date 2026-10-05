@@ -47,6 +47,7 @@ class Registry:
         "search_memory",
         "search_document",
         "prepare_data_deletion",
+        "prepare_memory_resolution",
     }
 
     def __init__(self):
