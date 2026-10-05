@@ -1,0 +1,43 @@
+{
+  "before": "2026-10-05T08:11:46.673578+00:00",
+  "after": "2026-10-05T08:14:39.054985+00:00",
+  "preserved_groups": {
+    "approvals": true,
+    "chunks": true,
+    "document_files": true,
+    "documents": true,
+    "entities": true,
+    "facts": true,
+    "memory": true,
+    "memory_domain": true,
+    "tasks": true
+  },
+  "counts_after": {
+    "approvals": 2,
+    "chunks": 0,
+    "document_files": 0,
+    "documents": 0,
+    "entities": 0,
+    "facts": 0,
+    "memory": 0,
+    "memory_domain": 0,
+    "tasks": 0
+  },
+  "source_hashes_match": true,
+  "health": {
+    "backend_status": 200,
+    "schema": "0005",
+    "source_hashes": {
+      "app/data_controls.py": "d27182d6b436ec44e9de739887373265fb925f1ee61febbd9c3c35ca35115554",
+      "app/domain_memory.py": "dd8045e7a5ff18b1b0eb5defb5506727882d518e3e596b016ec975e623e7764e",
+      "app/memory_resolution.py": "11645bb39082612a3b9b650be051c8160aa7b04395229010e961f4e5e65184b4",
+      "app/privacy.py": "e8048bd065c825c2607bdd925d611f6304f884f392771d48005a97665b08f249",
+      "app/providers.py": "ac15963d163389e3a09d952a13bce52826ae88508c26ad0fa21ca21711410ee4",
+      "app/runtime.py": "da4da8c462b9633181d0c6372470eebb66e77c4318e65481b0a936bd00409b35"
+    },
+    "workers": {
+      "background": 200,
+      "telegram": 200
+    }
+  }
+}

@@ -114,7 +114,9 @@ LLM выбирает `save_memory`, получает фактический ре
 
 Свежий Checker source PASS: 325 тестов, 11 собственных проверок и 4 настоящих
 Yandex сценария. Reviewer APPROVE, два собственных adversarial теста PASS.
-Поставка ожидается; genuine owner Telegram
+[PR4](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/4) и exact-head CI
+прошли; source обновлён в bigbang, данные сохранены. [Поставка](deployment/bigbang-uralbyte10.md).
+Genuine owner Telegram
 save → итоговый ответ → последующий поиск пока не проверен. Клиентский вердикт
 PENDING и блокировка демонстрации по URALBYTE-9 остаются без изменений.
 

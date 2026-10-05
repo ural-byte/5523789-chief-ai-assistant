@@ -79,4 +79,9 @@ immutable approval, повторы и JSON-протокол; два собств
 pricing snapshots и полнота этих оценок не были экспортированы до сброса
 изолированной БД; они не объявляются известными или полными.
 
-CI, PR, поставка и проверка через настоящий Telegram ещё ожидаются.
+[PR4](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/4) опубликован
+отдельно от URALBYTE-9. Exact-head push и PR CI прошли; проверенный source commit
+`82d346de0c579c988408ec9f348abd9b494a2564` развёрнут в bigbang.
+[Поставка](../deployment/bigbang-uralbyte10.md): процессы здоровы, source hashes
+совпадают, пользовательские данные и approvals сохранены. Проверка через настоящий
+Telegram ещё ожидается; synthetic production updates не создавались.
