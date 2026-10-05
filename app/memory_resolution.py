@@ -8,6 +8,8 @@ import uuid
 from collections import Counter
 from datetime import timedelta
 from functools import lru_cache
+from itertools import combinations
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, event, inspect, select
@@ -316,7 +318,7 @@ COPULA = {"я", "мы", "это", "есть", "являюсь", "являетс�
 SELF_SUBJECTS = {"я", "мы", "пользователь", "user"}
 
 
-def claim_words(value, scope, subjects, require_role=False):
+def claim_words(value, scope, subjects, require_role=False, scalar_subject=None):
     """Consume the complete claim grammar; unconsumed text is a separate/unknown thought."""
     if re.search(r"[^\w\s,.:;!?«»\"'’—–-]", value):
         return False
@@ -356,7 +358,11 @@ def claim_words(value, scope, subjects, require_role=False):
                     spelling = raw[
                         positions[start].start() : positions[start + len(tokens) - 1].end()
                     ]
-                    if require_role and not person_name(spelling):
+                    if (
+                        require_role
+                        and normalized(subject) != scalar_subject
+                        and not person_name(spelling)
+                    ):
                         return False
                     if require_role and len(tokens) > 1 and "," in raw[: positions[start].start()]:
                         return False
@@ -508,7 +514,9 @@ def role_subjects(facts, scope):
     return result
 
 
-def single_claim(session, entry, scope, selector):
+def single_claim(
+    session, entry, scope, selector, scalar_subject=None, slot_entity=None, projected_role=False
+):
     facts = session.execute(
         select(Fact, Entity)
         .join(Entity, Fact.entity_id == Entity.id)
@@ -516,6 +524,8 @@ def single_claim(session, entry, scope, selector):
     ).all()
     subjects = person_subjects(session, entry, facts, selector)
     subjects.update(role_subjects(facts, scope))
+    if scalar_subject:
+        subjects.add(scalar_subject)
     narrators = {
         entity.name
         for fact, entity in facts
@@ -531,17 +541,28 @@ def single_claim(session, entry, scope, selector):
         r'[«"]' + re.escape(name) + r'[»"]', normalized(entry.original)
     ):
         return False
-    if not claim_words(original_claim, scope, subjects, require_role=True):
+    if not claim_words(
+        original_claim, scope, subjects, require_role=True, scalar_subject=scalar_subject
+    ):
         return False
     kind, name = next(iter(scope))
     for fact, entity in facts:
         predicate = normalized(fact.predicate)
-        if normalized(entity.name) not in {normalized(s) for s in subjects} and not unit_subject(
-            entity.name, scope
+        if (
+            normalized(entity.name) not in {normalized(s) for s in subjects}
+            and not unit_subject(entity.name, scope)
+            and entity.id != slot_entity
         ):
             return False
         if UNIT_PATTERN.fullmatch(predicate):
             if unit_kind(predicate) != kind or normalized(fact.value).strip('«»" ') != name:
+                return False
+        elif projected_role and leadership_projection(predicate, fact.value):
+            if (
+                normalized(entity.name) not in {normalized(s) for s in subjects}
+                or leadership_projection(predicate, fact.value) != scope
+                or not claim_words(fact.value, scope, subjects)
+            ):
                 return False
         elif predicate in ROLE_PREDICATES or LEADERSHIP.fullmatch(predicate):
             if not claim_words(fact.value, scope, subjects):
@@ -587,6 +608,352 @@ class ResolutionArgs(BaseModel):
     selector: str = Field(min_length=1, max_length=200)
     context_id: uuid.UUID | None = None
     retain_entry_id: uuid.UUID | None = None
+
+
+class ShownResolutionArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    conflict_ref: str = Field(min_length=1, max_length=64)
+    retain_ref: Literal["a", "b"]
+
+
+def leadership_unit(predicate):
+    words = normalized(predicate).split()
+    if len(words) == 2 and LEADERSHIP.fullmatch(words[0]) and UNIT_PATTERN.fullmatch(words[1]):
+        return unit_kind(words[1])
+    return None
+
+
+def leadership_projection(predicate, value):
+    kind = leadership_unit(predicate)
+    if kind:
+        return {(kind, normalized(value).strip('«»" '))}
+    words = re.findall(r"\w+", normalized(value))
+    if LEADERSHIP.fullmatch(predicate) and len(words) > 1 and UNIT_PATTERN.fullmatch(words[0]):
+        return {(unit_kind(words[0]), " ".join(words[1:]))}
+    return None
+
+
+def projected_claim(session, entry):
+    facts = session.execute(
+        select(Fact, Entity)
+        .join(Entity, Fact.entity_id == Entity.id)
+        .where(Fact.entry_id == entry.id)
+    ).all()
+    for fact, entity in facts:
+        person_slot = leadership_projection(fact.predicate, fact.value)
+        if person_slot:
+            subject = normalized(entity.name)
+            spans = re.finditer(r"(?<!\w)" + re.escape(subject) + r"(?!\w)", entry.original, re.I)
+            if subject not in SELF_SUBJECTS and not any(
+                len(span.group().split()) == 1 and PERSON_NAME.fullmatch(span.group())
+                for span in spans
+            ):
+                continue
+            slot_entity = None
+        elif LEADERSHIP.fullmatch(fact.predicate):
+            if len(fact.value.split()) != 1 or not PERSON_NAME.fullmatch(fact.value.strip()):
+                continue
+            subject = normalized(fact.value)
+            slot_entity = entity.id
+        else:
+            continue
+        scope = named_units(entry.original, [subject])
+        if len(scope) != 1:
+            continue
+        kind, unit = next(iter(scope))
+        if person_slot:
+            if person_slot != scope:
+                continue
+        elif not unit_subject(entity.name, scope) and normalized(entity.name) != unit:
+            continue
+        # The projection is a witness for one whole claim, never a replacement for its grammar.
+        if single_claim(
+            session,
+            entry,
+            scope,
+            "",
+            scalar_subject=subject,
+            slot_entity=slot_entity,
+            projected_role=True,
+        ):
+            return scope, "self" if subject in SELF_SUBJECTS else subject
+    return None
+
+
+def projected_pair(session, entries):
+    claims = [projected_claim(session, entry) for entry in entries]
+    return bool(all(claims) and claims[0][0] == claims[1][0] and claims[0][1] != claims[1][1])
+
+
+def structured_pair(session, entries, witness):
+    facts = session.execute(
+        select(Fact, Entity)
+        .join(Entity, Fact.entity_id == Entity.id)
+        .where(Fact.id.in_([uuid.UUID(i) for i in witness["fact_ids"]]))
+    ).all()
+    if (
+        len(facts) != 2
+        or {str(f.entry_id) for f, _ in facts} != {str(e.id) for e in entries}
+        or any(
+            str(e.id) != witness["entity_id"] or f.predicate != witness["predicate"]
+            for f, e in facts
+        )
+        or len({normalized(f.value) for f, _ in facts}) != 2
+    ):
+        return False
+    scopes = []
+    for entry in entries:
+        fact, entity = next((f, e) for f, e in facts if f.entry_id == entry.id)
+        # A persisted scalar slot supplies the subject, never an arbitrary sentence/entity.
+        if (
+            not LEADERSHIP.fullmatch(fact.predicate)
+            or not PERSON_NAME.fullmatch(fact.value.strip())
+            or len(fact.value.split()) != 1
+        ):
+            return False
+        subject = normalized(fact.value)
+        scope = named_units(entry.original, [subject])
+        if len(scope) != 1:
+            return False
+        _, unit = next(iter(scope))
+        if not unit_subject(entity.name, scope) and normalized(entity.name) != unit:
+            return False
+        if not single_claim(
+            session, entry, scope, "", scalar_subject=subject, slot_entity=entity.id
+        ):
+            return False
+        scopes.append(scope)
+    return scopes[0] == scopes[1]
+
+
+def legacy_pair(session, entries):
+    witnesses = set(SELF_SUBJECTS)
+    for entry in entries:
+        # Only scalar spans already accepted by the historical conservative validator.
+        for match in PERSON_NAME.finditer(entry.original):
+            if person_name(match.group()):
+                witnesses.add(match.group())
+    return any(same_claim(session, *entries, selector) for selector in sorted(witnesses))
+
+
+def validate_pair(session, entries, witness):
+    if witness.get("kind") == "structured":
+        return structured_pair(session, entries, witness)
+    if witness.get("kind") == "projection":
+        return projected_pair(session, entries)
+    return witness.get("kind") == "legacy" and legacy_pair(session, entries)
+
+
+def discover_pairs(session, context, conflicts):
+    entries = {
+        str(e.id): e
+        for e in session.scalars(
+            select(MemoryEntry).where(
+                MemoryEntry.owner_id == context.owner_id,
+                MemoryEntry.id.in_([uuid.UUID(i) for i in context.entries]),
+            )
+        )
+    }
+    candidates, blocked = {}, set()
+    for group in conflicts:
+        ids = {f["entry_id"] for f in group}
+        if len(ids) != 2 or len(group) != 2:
+            blocked.update(ids)
+            continue
+        if not ids.issubset(entries):
+            continue
+        ordered = sorted(ids)
+        fact = session.get(Fact, uuid.UUID(group[0]["fact_id"]))
+        if not fact:
+            continue
+        witness = {
+            "kind": "structured",
+            "entity_id": str(fact.entity_id),
+            "predicate": fact.predicate,
+            "fact_ids": sorted(f["fact_id"] for f in group),
+        }
+        if validate_pair(session, [entries[i] for i in ordered], witness):
+            candidates[tuple(ordered)] = witness
+    legacy_ids = sorted(i for i, entry in entries.items() if LEADERSHIP.search(entry.original))
+    claims = {i: projected_claim(session, entries[i]) for i in legacy_ids}
+    for ids in combinations(legacy_ids, 2):
+        left, right = (claims[i] for i in ids)
+        if ids not in candidates and left and right and left[0] == right[0] and left[1] != right[1]:
+            candidates[ids] = {"kind": "projection"}
+        elif ids not in candidates and legacy_pair(session, [entries[i] for i in ids]):
+            candidates[ids] = {"kind": "legacy"}
+    degree = Counter(i for ids in candidates for i in ids)
+    pairs = [
+        {
+            "conflict_ref": "mc_" + uuid.uuid4().hex[:12],
+            "a": ids[0],
+            "b": ids[1],
+            "validator": witness,
+        }
+        for ids, witness in candidates.items()
+        if not (set(ids) & blocked) and all(degree[i] == 1 for i in ids)
+    ]
+    context.shown_conflicts = {"schema": 1, "pairs": pairs, "delivery": None}
+    return pairs
+
+
+def pair_records(session, context):
+    result = []
+    for pair in (context.shown_conflicts or {}).get("pairs", []):
+        versions = [session.get(MemoryEntry, uuid.UUID(pair[k])) for k in ("a", "b")]
+        if any(
+            not entry
+            or entry.owner_id != context.owner_id
+            or snapshot(session, entry) != context.entries.get(str(entry.id))
+            for entry in versions
+        ) or not validate_pair(session, versions, pair["validator"]):
+            return []
+        result.append(
+            {
+                "conflict_ref": pair["conflict_ref"],
+                **{key: entry.original for key, entry in zip(("a", "b"), versions, strict=True)},
+            }
+        )
+    return result
+
+
+def human_conflict_records(session, context):
+    ids = {pair[k] for pair in (context.shown_conflicts or {}).get("pairs", []) for k in ("a", "b")}
+    inv = session.get(Invocation, context.invocation_id)
+    for group in (inv.result or {}).get("data", {}).get("conflicts", []):
+        ids.update(f["entry_id"] for f in group)
+    records = []
+    for entry_id in sorted(ids):
+        entry = session.get(MemoryEntry, uuid.UUID(entry_id))
+        if (
+            not entry
+            or entry.owner_id != context.owner_id
+            or snapshot(session, entry) != context.entries.get(entry_id)
+        ):
+            from app.privacy import ContextChanged
+
+            raise ContextChanged()
+        records.append(entry.original)
+    return records
+
+
+def shown_authority(session, context):
+    contract = context.shown_conflicts or {}
+    delivery = contract.get("delivery")
+    origin = session.get(Operation, context.operation_id)
+    state = owner_lock(session, context.owner_id)
+    if (
+        contract.get("schema") != 1
+        or not delivery
+        or not origin
+        or origin.status != "done"
+        or context.context_epoch != state.context_epoch
+        or origin.context_epoch != state.context_epoch
+        or origin.owner_id != context.owner_id
+        or origin.chat_id != context.chat_id
+        or origin.terminal_revision != delivery.get("revision")
+    ):
+        return False
+    rows = session.scalars(
+        select(Outbox)
+        .where(
+            Outbox.operation_id == origin.id,
+            Outbox.purpose == "final",
+            Outbox.kind == "sendMessage",
+            Outbox.terminal_revision == delivery["revision"],
+            Outbox.key.in_(delivery["keys"]),
+        )
+        .order_by(Outbox.key)
+    ).all()
+    if (
+        not rows
+        or [r.key for r in rows] != sorted(delivery["keys"])
+        or any(r.status != "done" or not r.acknowledged_at for r in rows)
+        or digest([r.payload.get("text") for r in rows]) != delivery["text_hash"]
+    ):
+        return False
+    return bool(pair_records(session, context))
+
+
+def latest_shown_context(session, op):
+    state = owner_lock(session, op.owner_id)
+    origins = session.scalars(
+        select(Operation)
+        .where(
+            Operation.owner_id == op.owner_id,
+            Operation.chat_id == op.chat_id,
+            Operation.id != op.id,
+            Operation.status == "done",
+            Operation.context_epoch == state.context_epoch,
+        )
+        .order_by(Operation.received_at.desc(), Operation.id.desc())
+    )
+    for origin in origins:
+        if not delivered(session, origin):
+            continue
+        searches = session.scalars(
+            select(Invocation)
+            .where(Invocation.operation_id == origin.id, Invocation.name == "search_memory")
+            .order_by(Invocation.ordinal.desc())
+        ).all()
+        if not searches:
+            continue
+        context = session.scalar(
+            select(MemoryContext).where(MemoryContext.invocation_id == searches[0].id)
+        )
+        # A delivered later search is the boundary, including a search without a pair.
+        return context if context and shown_authority(session, context) else None
+    return None
+
+
+def bind_shown_delivery(session, context, operation, key_prefix):
+    records = pair_records(session, context)
+    if not records or context.shown_conflicts.get("delivery"):
+        return
+    session.flush()
+    rows = session.scalars(
+        select(Outbox)
+        .where(
+            Outbox.operation_id == operation.id,
+            Outbox.key.startswith(key_prefix + ":"),
+            Outbox.terminal_revision == operation.terminal_revision,
+        )
+        .order_by(Outbox.key)
+    ).all()
+    body = "".join(
+        r.payload["text"] for r in sorted(rows, key=lambda r: int(r.key.rsplit(":", 1)[1]))
+    )
+    if not rows or any(record[k] not in body for record in records for k in ("a", "b")):
+        return
+    context.shown_conflicts = {
+        **context.shown_conflicts,
+        "delivery": {
+            "revision": operation.terminal_revision,
+            "keys": [r.key for r in rows],
+            "text_hash": digest([r.payload["text"] for r in rows]),
+        },
+    }
+
+
+def prepare_shown_resolution(session, op, invocation_id, args):
+    existing = session.scalar(select(Approval).where(Approval.invocation_id == invocation_id))
+    if existing:
+        preview = session.get(ApprovalPreview, existing.id)
+        if existing.status != "pending" or not preview:
+            return clarification()
+        return approval_result(existing, preview.text)
+    context = latest_shown_context(session, op)
+    if not context:
+        return clarification()
+    pair = next(
+        (p for p in context.shown_conflicts["pairs"] if p["conflict_ref"] == args.conflict_ref),
+        None,
+    )
+    if not pair:
+        return clarification()
+    retain = session.get(MemoryEntry, uuid.UUID(pair[args.retain_ref]))
+    old = session.get(MemoryEntry, uuid.UUID(pair["b" if args.retain_ref == "a" else "a"]))
+    return create_resolution(session, op, invocation_id, context, old, retain, pair)
 
 
 def clarification():
@@ -636,6 +1003,10 @@ def prepare_resolution(session, op, invocation_id, args):
     if len(old_candidates) != 1:
         return clarification()
     old = old_candidates[0]
+    return create_resolution(session, op, invocation_id, context, old, retain)
+
+
+def create_resolution(session, op, invocation_id, context, old, retain, pair=None):
     existing = session.scalar(select(Approval).where(Approval.invocation_id == invocation_id))
     if existing:
         preview = session.get(ApprovalPreview, existing.id)
@@ -651,8 +1022,11 @@ def prepare_resolution(session, op, invocation_id, args):
         "Остальные записи, поручения, документы и встречи сохраняются. "
         "Удаление необратимо. Подтверждение действует 24 часа."
     )
+    from app.memory_output import validate_memory_output
+
+    validate_memory_output(preview_text)
     payload = {
-        "schema": 1,
+        "schema": 2 if pair else 1,
         "owner_id": op.owner_id,
         "chat_id": op.chat_id,
         "context_id": str(context.id),
@@ -664,13 +1038,16 @@ def prepare_resolution(session, op, invocation_id, args):
         "retain": context.entries[str(retain.id)],
         "preview_hash": digest(preview_text),
     }
+    if pair:
+        payload["shown"] = context.shown_conflicts
+        payload["conflict_ref"] = pair["conflict_ref"]
     payload["hash"] = digest(payload)
     approval = Approval(
         invocation_id=invocation_id,
         operation_id=op.id,
         owner_id=op.owner_id,
         chat_id=op.chat_id,
-        action_kind="memory_resolution",
+        action_kind="memory_resolution_shown" if pair else "memory_resolution",
         payload=payload,
         expires_at=now() + timedelta(hours=24),
     )
@@ -696,14 +1073,22 @@ def approval_result(row, preview):
 
 
 class PrepareMemoryResolution:
-    arguments = ResolutionArgs
+    arguments = ShownResolutionArgs
     description = (
-        "Подготовить выборочное удаление старой версии из реально показанной памяти; "
-        "только явная просьба и approval."
+        "Выбрать актуальную показанную версию; только ясный выбор И просьба удалить другую. "
+        "Удаление — кнопкой."
     )
 
     async def prepare(self, ctx, args):
         return args
+
+    def apply(self, session, ctx, args, prepared):
+        op = guard_invocation(session, ctx)
+        return prepare_shown_resolution(session, op, uuid.UUID(ctx.idempotency_key), args)
+
+
+class LegacyPrepareMemoryResolution(PrepareMemoryResolution):
+    arguments = ResolutionArgs
 
     def apply(self, session, ctx, args, prepared):
         op = guard_invocation(session, ctx)
@@ -859,7 +1244,9 @@ def scrub_references(session, owner, entry_ids, approval_id, current=None):
     for context in session.scalars(
         select(MemoryContext).where(MemoryContext.owner_id == owner)
     ).all():
-        if references(context.entries, identities):
+        if references(context.entries, identities) or references(
+            context.shown_conflicts, identities
+        ):
             copied_ops.add(context.operation_id)
             affected_inv.add(context.invocation_id)
             session.delete(context)
@@ -945,6 +1332,11 @@ def scrub_references(session, owner, entry_ids, approval_id, current=None):
 
 def execute_resolution(session, row):
     p = row.payload
+    if type(p.get("schema")) is not int or (row.action_kind, p.get("schema")) not in {
+        ("memory_resolution", 1),
+        ("memory_resolution_shown", 2),
+    }:
+        raise ValueError("invalid_resolution_version")
     if (
         p.get("owner_id") != row.owner_id
         or p.get("chat_id") != row.chat_id
@@ -963,6 +1355,18 @@ def execute_resolution(session, row):
         not context
         or context.entries.get(p["old_entry_id"]) != p["old"]
         or context.entries.get(p["retain_entry_id"]) != p["retain"]
+    ):
+        row.status, row.stale_reason = "stale", "context_changed"
+        session.query(ApprovalPreview).filter(ApprovalPreview.approval_id == row.id).delete()
+        return False
+    if p["schema"] == 2 and (
+        context.shown_conflicts != p.get("shown")
+        or not shown_authority(session, context)
+        or not any(
+            pair["conflict_ref"] == p.get("conflict_ref")
+            and {pair["a"], pair["b"]} == {p["old_entry_id"], p["retain_entry_id"]}
+            for pair in (context.shown_conflicts or {}).get("pairs", [])
+        )
     ):
         row.status, row.stale_reason = "stale", "context_changed"
         session.query(ApprovalPreview).filter(ApprovalPreview.approval_id == row.id).delete()

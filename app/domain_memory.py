@@ -269,13 +269,45 @@ class SearchMemory:
             from app.privacy import ContextChanged
 
             raise ContextChanged()
+        live_entries = {
+            str(e.id): e
+            for e in session.scalars(select(MemoryEntry).where(MemoryEntry.id.in_(original_ids)))
+        }
+        live_facts = {
+            str(f.id): (f, entity, entry)
+            for f, entity, entry in session.execute(
+                select(Fact, Entity, MemoryEntry)
+                .join(Entity, Fact.entity_id == Entity.id)
+                .join(MemoryEntry, Fact.entry_id == MemoryEntry.id)
+                .where(Fact.id.in_([uuid.UUID(f["fact_id"]) for f in prepared["facts"]]))
+            )
+        }
+        if any(
+            live_entries[e["id"]].original != e["text"]
+            or live_entries[e["id"]].source_text != e["source"]
+            for e in prepared["memory"]
+        ) or any(
+            f["fact_id"] not in live_facts
+            or (
+                str(live_facts[f["fact_id"]][0].entry_id),
+                live_facts[f["fact_id"]][1].name,
+                live_facts[f["fact_id"]][0].predicate,
+                live_facts[f["fact_id"]][0].value,
+                live_facts[f["fact_id"]][2].source_text,
+            )
+            != (f["entry_id"], f["entity"], f["predicate"], f["value"], f["source"])
+            for f in prepared["facts"]
+        ):
+            from app.privacy import ContextChanged
+
+            raise ContextChanged()
         if not prepared["memory"] and not prepared["facts"]:
             return ToolResult(
                 status="ok",
                 presentation="canonical",
                 user_message="Сохранённых сведений по этому запросу нет.",
             )
-        from app.memory_resolution import remember_context
+        from app.memory_resolution import discover_pairs, pair_records, remember_context
 
         op = session.get(Operation, ctx.operation_id)
         context = remember_context(
@@ -293,6 +325,8 @@ class SearchMemory:
             for versions in groups.values()
             if len({fact["value"].strip().casefold() for fact in versions}) > 1
         ]
+        discover_pairs(session, context, prepared["conflicts"])
+        prepared["shown_pairs"] = pair_records(session, context)
         return ToolResult(status="ok", data=prepared)
 
 

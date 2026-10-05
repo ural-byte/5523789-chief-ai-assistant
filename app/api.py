@@ -106,7 +106,6 @@ def ingest(payload: dict, x_local_upload: bool = Header(default=False)):
         else:
             from app.data_controls import deletion_scope
             from app.memory_overview import overview_requested
-            from app.memory_resolution import resolution_selector
 
             source = message.get("text", "")
             scope = deletion_scope(source)
@@ -115,8 +114,6 @@ def ingest(payload: dict, x_local_upload: bool = Header(default=False)):
                 if scope
                 else ("memory_overview" if overview_requested(source) else "agent")
             )
-            if resolution_selector(source):
-                kind = "memory_resolution"
             if scope:
                 op.scenario = "data_control"
             session.add(

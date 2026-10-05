@@ -86,7 +86,9 @@ async def test_grounded_runtime_backend_citations_and_no_injected_tools(sessions
                     calls.insert(0, ToolCall("save", "save_memory", {"text": "Иванов директор"}))
                 return Generation("", calls, {}, Usage(), "test")
             assert tools == []
-            assert any(message.get("content") == GROUNDING for message in messages)
+            assert any(
+                str(message.get("content", "")).startswith(GROUNDING) for message in messages
+            )
             assert self.estimate_request_budget(messages, tools) <= 16000
             raw = json.loads(next(m["content"] for m in reversed(messages) if m["role"] == "tool"))
             if mode == "mixed":
@@ -223,7 +225,11 @@ async def test_conflicting_versions_after_first_fifty_are_always_visible(session
             )
         )
     assert "director" in reply and "manager" in reply
-    assert "Противоречащие записи" in reply and "Источник: Запомни" in reply
+    assert "Сохранены разные версии:" in reply
+    assert "Противоречащие записи" not in reply
+    from app.memory_output import validate_memory_output
+
+    validate_memory_output(reply)
 
 
 async def test_partial_index_resumes_after_worker_restart(sessions, tmp_path):

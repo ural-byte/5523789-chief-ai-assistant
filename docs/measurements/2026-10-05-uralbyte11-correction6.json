@@ -1,0 +1,194 @@
+{
+  "ticket": "URALBYTE-11",
+  "date_utc": "2026-10-05",
+  "scope": "Isolated database; actual Yandex API; does not certify genuine owner Telegram smoke",
+  "source_manifest_sha256": "4fcedfe1a5b41400ad714620c4a2924d7cbe1767497baa6c9a6577a0386253b1",
+  "source_frozen_hashes_matched": true,
+  "checker": "PASS",
+  "tests": {
+    "full": 613,
+    "independent_valid_paths": 109,
+    "live_planned": 4,
+    "live_attempts": 4,
+    "live_passed": 4
+  },
+  "first_full_environment_outcome": {
+    "passed": 32,
+    "setup_errors": 581,
+    "reason": "Sandbox denied loopback TCP to test PostgreSQL; repeated with authorized access on same source"
+  },
+  "first_independent_outcome": {
+    "passed": 109,
+    "failed": 12,
+    "invalid_fixture_paths": 12,
+    "extra_json_final_guard": "UNVERIFIED; mock emitted tool when allowed schemas were empty; no false completion or mutation"
+  },
+  "observed_usage_totals": {
+    "observed_call_count": 61,
+    "operation_types": {
+      "generation": 36,
+      "embedding": 25
+    },
+    "status_counts": {
+      "succeeded": 61
+    },
+    "known_total_cost": "14.7660743000",
+    "all_cost_complete": true,
+    "currency": [
+      "RUB"
+    ],
+    "pricing_version": [
+      "yandex-2026-10-04-v4.1"
+    ],
+    "model_suffix": [
+      "deepseek-v4.1-flash/latest",
+      "text-embeddings-v2-doc/latest",
+      "text-embeddings-v2-query/latest"
+    ],
+    "max_operation_input_spent": 15710
+  },
+  "budget_note": "Conservative input budget derives from serialized request wire bytes; these are not actual API token usage. Unknown metrics stay null.",
+  "historical_c4_json_core_cause": "UNKNOWN; not reconstructed or claimed repaired",
+  "cases": [
+    {
+      "scenario": "representative_native_full_actual_model_core",
+      "protocol": "native",
+      "passed": true,
+      "provider_calls": 20,
+      "usage": {
+        "input_tokens": {
+          "known_sum": 26252,
+          "reported_calls": 14,
+          "unknown_calls": 6
+        },
+        "output_tokens": {
+          "known_sum": 1281,
+          "reported_calls": 14,
+          "unknown_calls": 6
+        },
+        "cached_tokens": {
+          "known_sum": 3584,
+          "reported_calls": 20,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known_sum": null,
+          "reported_calls": 0,
+          "unknown_calls": 20
+        },
+        "embedding_tokens": {
+          "known_sum": 94,
+          "reported_calls": 6,
+          "unknown_calls": 14
+        }
+      },
+      "estimated_cost_rub": "7.7106494000",
+      "max_conservative_input_budget": 14097
+    },
+    {
+      "scenario": "representative_json_full_actual_model_core",
+      "protocol": "json",
+      "passed": true,
+      "provider_calls": 20,
+      "usage": {
+        "input_tokens": {
+          "known_sum": 22336,
+          "reported_calls": 14,
+          "unknown_calls": 6
+        },
+        "output_tokens": {
+          "known_sum": 1649,
+          "reported_calls": 14,
+          "unknown_calls": 6
+        },
+        "cached_tokens": {
+          "known_sum": 17920,
+          "reported_calls": 20,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known_sum": null,
+          "reported_calls": 0,
+          "unknown_calls": 20
+        },
+        "embedding_tokens": {
+          "known_sum": 93,
+          "reported_calls": 6,
+          "unknown_calls": 14
+        }
+      },
+      "estimated_cost_rub": "3.4942393000",
+      "max_conservative_input_budget": 15710
+    },
+    {
+      "scenario": "native_pdf_source_injection_original",
+      "protocol": "native",
+      "passed": true,
+      "provider_calls": 11,
+      "usage": {
+        "input_tokens": {
+          "known_sum": 7343,
+          "reported_calls": 4,
+          "unknown_calls": 7
+        },
+        "output_tokens": {
+          "known_sum": 649,
+          "reported_calls": 4,
+          "unknown_calls": 7
+        },
+        "cached_tokens": {
+          "known_sum": 768,
+          "reported_calls": 11,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known_sum": null,
+          "reported_calls": 0,
+          "unknown_calls": 11
+        },
+        "embedding_tokens": {
+          "known_sum": 134,
+          "reported_calls": 7,
+          "unknown_calls": 4
+        }
+      },
+      "estimated_cost_rub": "2.3559534000",
+      "max_conservative_input_budget": 13882
+    },
+    {
+      "scenario": "json_pdf_source_injection_original",
+      "protocol": "json",
+      "passed": true,
+      "provider_calls": 10,
+      "usage": {
+        "input_tokens": {
+          "known_sum": 6163,
+          "reported_calls": 4,
+          "unknown_calls": 6
+        },
+        "output_tokens": {
+          "known_sum": 899,
+          "reported_calls": 4,
+          "unknown_calls": 6
+        },
+        "cached_tokens": {
+          "known_sum": 4864,
+          "reported_calls": 10,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known_sum": null,
+          "reported_calls": 0,
+          "unknown_calls": 10
+        },
+        "embedding_tokens": {
+          "known_sum": 122,
+          "reported_calls": 6,
+          "unknown_calls": 4
+        }
+      },
+      "estimated_cost_rub": "1.2052322000",
+      "max_conservative_input_budget": 14943
+    }
+  ]
+}
