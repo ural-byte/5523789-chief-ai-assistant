@@ -90,8 +90,8 @@ Future work: OCR, реальные календарь/почта, несколь
 | Точный выбор старой и актуальной записи из реального конфликта | Read-only frozen helper compatibility PASS; настоящий Telegram flow ожидается |
 | Общее destructive approval, cancel, owner/chat/TTL, immutable payload и повтор confirm | Свежие Checker source PASS, Reviewer APPROVE |
 | Deadline обработки, зависший AI/tool/job и защита от поздних результатов | Checker source PASS, Reviewer APPROVE; live проверяется отдельно |
-| Непустой final, конечные повторы доставки и восстановление ранее зависшей операции | Checker source PASS; live recovery ещё не выполнялся |
-| Telegram: вопрос → выбор → точная карточка → настоящий owner confirm → повторный вопрос | Ожидается после source gates и обновления бота |
+| Непустой final, конечные повторы доставки и восстановление ранее зависшей операции | Checker source PASS; live recovery PASS, один фактический Telegram ACK без replay |
+| Telegram: вопрос → выбор → точная карточка → настоящий owner confirm → повторный вопрос | Ожидаются настоящие сообщения и подтверждение владельца; бот обновлён |
 | Продолжение клиентской приёмки с теми же записями | PENDING; reset до этой проверки не выполняется |
 
 Клиентский вердикт не меняется. Блокировка снимается только после повторной проверки
@@ -100,5 +100,6 @@ Future work: OCR, реальные календарь/почта, несколь
 
 После разрешённого пользователем дополнительного цикла: 292 теста и 68 независимых
 проверок PASS, Reviewer APPROVE с 24 собственными проверками. Обход через
-sentence-valued entity/narrator/selector закрыт. CI, развёртывание и настоящий
-owner flow ещё проверяются; клиентский вердикт остаётся PENDING.
+sentence-valued entity/narrator/selector закрыт. CI проверенного source commit,
+развёртывание и независимый live recovery PASS. [Поставка](deployment/bigbang-uralbyte9.md).
+Настоящий owner flow ещё ожидается; клиентский вердикт остаётся PENDING.

@@ -1,0 +1,121 @@
+{
+  "date": "2026-10-05",
+  "source_revision": "d8f463cb6baf7851abb60eac851640c635147b1f",
+  "pr": "https://github.com/ural-byte/5523789-chief-ai-assistant/pull/3",
+  "source_manifest_sha256": "5bd5a47641fe2ff4c982d050edee8820252e6123264fcd40ede2e43af434338b",
+  "source_gates": {
+    "checker": "PASS",
+    "main_tests": 292,
+    "independent_tests": 68,
+    "reviewer": "APPROVE",
+    "reviewer_tests": 24
+  },
+  "ci": {
+    "push": {
+      "url": "https://github.com/ural-byte/5523789-chief-ai-assistant/actions/runs/37260891037",
+      "conclusion": "success",
+      "head_sha": "d8f463cb6baf7851abb60eac851640c635147b1f"
+    },
+    "pull_request": {
+      "url": "https://github.com/ural-byte/5523789-chief-ai-assistant/actions/runs/37260931433",
+      "conclusion": "success",
+      "head_sha": "d8f463cb6baf7851abb60eac851640c635147b1f"
+    }
+  },
+  "deployment": {
+    "context": "yc-big-bang",
+    "namespace": "chief-ai-assistant",
+    "immutable_image": "cr.yandex/crp5er6iam3h65oe4kdd/chief-ai-assistant@sha256:d4e42aac6c284d41dcd454c4dd02647779b78cdf3f0c8e6cc916ebd375cca27c",
+    "oci_revision": "d8f463cb6baf7851abb60eac851640c635147b1f",
+    "pod": "assistant-5dfddf66f5-kdgvp",
+    "ready_containers": 3,
+    "container_restarts": 0,
+    "database_ready": true,
+    "pvc_unchanged": true,
+    "pvc_bound": true,
+    "health": {
+      "backend_status": 200,
+      "helper_sha256": "f5294b25825ae5f8d444c8d1a20480971e10cca4b8233dc474a9d88a52973e07",
+      "schema": "0005",
+      "workers": {
+        "background": 200,
+        "telegram": 200
+      }
+    }
+  },
+  "data_preservation": {
+    "all_record_groups_equal_before_after": true,
+    "groups_equal": {
+      "approvals": true,
+      "chunks": true,
+      "document_files": true,
+      "documents": true,
+      "entities": true,
+      "facts": true,
+      "memory": true,
+      "memory_domain": true,
+      "tasks": true
+    },
+    "both_conflicting_entries_preserved": true,
+    "deployed_readonly_pair_compatible": true,
+    "compatibility_sampled_at": "2026-10-05T03:58:10.545821+00:00"
+  },
+  "legacy_recovery": {
+    "sampled_at": "2026-10-05T03:56:13.758489+00:00",
+    "operation": {
+      "deadline_at": "2026-10-04 17:21:24.235176+00:00",
+      "delivery_state": "delivered",
+      "error_reason": "delivery_failed",
+      "final_delivery_ack_at": "2026-10-05 03:54:19.759212+00:00",
+      "id": "29f20a30-4cb8-4be7-8ae2-dc5d88ed0ebe",
+      "processing_finished_at": "2026-10-04 17:20:01.844182+00:00",
+      "received_at": "2026-10-04 17:19:54.235176+00:00",
+      "recovery_created": true,
+      "scenario": "memory",
+      "status": "error",
+      "terminal_revision": 1
+    },
+    "error_final": {
+      "acknowledged_at": "2026-10-05 03:54:19.759212+00:00",
+      "attempts": 1,
+      "delivery_deadline_at": "2026-10-05 03:55:15.358245+00:00",
+      "error_code": null,
+      "expected_error_message": true,
+      "failure_class": null,
+      "id": "822506e8-e138-426d-9951-84a9a6bee59d",
+      "key": "29f20a30-4cb8-4be7-8ae2-dc5d88ed0ebe:terminal-error:0",
+      "kind": "sendMessage",
+      "purpose": "final",
+      "status": "done",
+      "terminal_failed_at": null,
+      "terminal_revision": 1,
+      "text_chars": 106,
+      "text_stripped_chars": 106
+    },
+    "blank_final_retired": true,
+    "blank_final_legacy_attempts": 155,
+    "original_ai_call_ids_unchanged": true,
+    "original_ai_call_count": 3,
+    "original_tool_invocation_ids_unchanged": true,
+    "original_tool_invocation_count": 1,
+    "original_job_attempts": 1,
+    "domain_actions_not_replayed": true
+  },
+  "independent_checker": {
+    "deployment_recovery": "PASS",
+    "tracker_comment": 64,
+    "owner_flow": "PENDING"
+  },
+  "human_telegram_flow": {
+    "question": "PENDING",
+    "selection": "PENDING",
+    "exact_approval_card": "PENDING",
+    "owner_confirmation": "PENDING",
+    "subsequent_retrieval": "PENDING",
+    "synthetic_callback_used": false,
+    "reset_performed": false
+  },
+  "demo": "BLOCKED",
+  "client_verdict": "PENDING",
+  "limits": "Partial evidence proves deployment, preservation and recovery, not the genuine owner approval flow. Private memory and Telegram owner identifiers are excluded."
+}
