@@ -1,0 +1,190 @@
+{
+  "ticket": "URALBYTE-11",
+  "source_commit": "66e53cd189a20e02664a185aa7014023ea4a1b67",
+  "image": "cr.yandex/crp5er6iam3h65oe4kdd/chief-ai-assistant@sha256:da4733743bb269a01460ca60f8e7a4e6f751d88a6a7bdd4651a8c58b194fca73",
+  "amd64_digest": "sha256:06c2ec9c1126d3602fcf2a7f8ed1a693f08bb9aaa335cca6d0caa78910580bed",
+  "source_manifest_sha256": "4fcedfe1a5b41400ad714620c4a2924d7cbe1767497baa6c9a6577a0386253b1",
+  "source_gates": {
+    "checker": "PASS",
+    "reviewer": "APPROVE",
+    "tests": 613,
+    "independent_valid_paths": 109,
+    "fresh_actual_yandex": 4
+  },
+  "source_ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 37364100931,
+      "event": "pull_request",
+      "headSha": "66e53cd189a20e02664a185aa7014023ea4a1b67",
+      "status": "completed",
+      "url": "https://github.com/ural-byte/5523789-chief-ai-assistant/actions/runs/37364100931"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 37364055616,
+      "event": "push",
+      "headSha": "66e53cd189a20e02664a185aa7014023ea4a1b67",
+      "status": "completed",
+      "url": "https://github.com/ural-byte/5523789-chief-ai-assistant/actions/runs/37364055616"
+    }
+  ],
+  "before": {
+    "sampled_at": "2026-10-06T04:37:48.674123+00:00",
+    "schema": "0005",
+    "counts": {
+      "approvals": 3,
+      "chunks": 0,
+      "document_files": 0,
+      "documents": 0,
+      "entities": 2,
+      "facts": 3,
+      "memory": 3,
+      "memory_domain": 3,
+      "tasks": 0
+    }
+  },
+  "after": {
+    "sampled_at": "2026-10-06T04:39:52.175783+00:00",
+    "schema": "0006",
+    "counts": {
+      "approvals": 3,
+      "chunks": 0,
+      "document_files": 0,
+      "documents": 0,
+      "entities": 2,
+      "facts": 3,
+      "memory": 3,
+      "memory_domain": 3,
+      "tasks": 0
+    }
+  },
+  "preserved_groups": {
+    "approvals": true,
+    "chunks": true,
+    "document_files": true,
+    "documents": true,
+    "entities": true,
+    "facts": true,
+    "memory": true,
+    "memory_domain": true,
+    "tasks": true
+  },
+  "health": {
+    "backend_status": 200,
+    "schema": "0006",
+    "source_hashes": {
+      "app/api.py": "9732bee7d0d2e8badead5ccef166336eac23e7bf7b4b0e88690df2903cb7a3e7",
+      "app/data_controls.py": "d27182d6b436ec44e9de739887373265fb925f1ee61febbd9c3c35ca35115554",
+      "app/domain_actions.py": "72df790e0c38da0531ba18dafe8c1b76be9c0cc28972d794b6c0c2237b2ce7ee",
+      "app/domain_memory.py": "1af7a65fd912edd9a5ee93eefc6cbb02a7d5e3167a7bd2f103bc04931835aad8",
+      "app/memory_output.py": "ef85502c57c6499dfd03265f3f7746414cce6223d3b53e5f7e0bcbd68d926d4d",
+      "app/memory_resolution.py": "823d48a9775a7b4db421058641a3634f4e34577ad3dd8777577f04cb699b2f4b",
+      "app/models.py": "dee30188c9667737b7c5a7b2898de2e14bd616c9cce93f93b6cdc64ea4046000",
+      "app/privacy.py": "e8048bd065c825c2607bdd925d611f6304f884f392771d48005a97665b08f249",
+      "app/providers.py": "ac15963d163389e3a09d952a13bce52826ae88508c26ad0fa21ca21711410ee4",
+      "app/runtime.py": "c5a9e570fe87ac0d2bb6c7f6684885ec639047a1d89fc514ca8fb518177f5d8e",
+      "migrations/versions/0006_memory_shown_conflicts.py": "d098e577f77882ecbf0ab8ce13ee4a3ee020ba749d1b70f648a795971df8d238"
+    },
+    "workers": {
+      "background": 200,
+      "telegram": 200
+    }
+  },
+  "genuine_owner_telegram": "PENDING",
+  "client_verdict": "PENDING",
+  "demo": "BLOCKED",
+  "pod": {
+    "name": "assistant-55cbf54c9b-nlb89",
+    "created_at": "2026-10-06T04:38:50Z",
+    "containers": [
+      {
+        "name": "backend",
+        "ready": true,
+        "restart_count": 0,
+        "image_id": "cr.yandex/crp5er6iam3h65oe4kdd/chief-ai-assistant@sha256:da4733743bb269a01460ca60f8e7a4e6f751d88a6a7bdd4651a8c58b194fca73"
+      },
+      {
+        "name": "background",
+        "ready": true,
+        "restart_count": 0,
+        "image_id": "cr.yandex/crp5er6iam3h65oe4kdd/chief-ai-assistant@sha256:da4733743bb269a01460ca60f8e7a4e6f751d88a6a7bdd4651a8c58b194fca73"
+      },
+      {
+        "name": "telegram",
+        "ready": true,
+        "restart_count": 0,
+        "image_id": "cr.yandex/crp5er6iam3h65oe4kdd/chief-ai-assistant@sha256:da4733743bb269a01460ca60f8e7a4e6f751d88a6a7bdd4651a8c58b194fca73"
+      }
+    ],
+    "init": [
+      {
+        "name": "migrate",
+        "exit_code": 0
+      }
+    ]
+  },
+  "persistent_volumes": {
+    "documents": {
+      "volume": "pvc-20c68842-e5ec-476f-b161-047159f978de",
+      "capacity": "2Gi",
+      "unchanged": true
+    },
+    "postgres": {
+      "volume": "pvc-148f28c3-fe05-495c-b232-f2fd0dd5b430",
+      "capacity": "10Gi",
+      "unchanged": true
+    }
+  },
+  "ci_attempts": {
+    "first": {
+      "result": "Infrastructure failure: no hosted runner acquired",
+      "executed_steps": 0
+    },
+    "second": {
+      "result": "Infrastructure failure: no hosted runner acquired",
+      "executed_steps": 0
+    },
+    "third": "SUCCESS"
+  },
+  "independent_release_check": {
+    "verdict": "PASS",
+    "scope": "READONLY DEPLOYMENT CHECKS; genuine owner AC7 UNVERIFIED phase0",
+    "source_commit": "66e53cd189a20e02664a185aa7014023ea4a1b67",
+    "freeze_sha256": "4fcedfe1a5b41400ad714620c4a2924d7cbe1767497baa6c9a6577a0386253b1",
+    "published_all50_match": true,
+    "deployed_all33_source_match": true,
+    "critical11_source_match": true,
+    "schema": "0006",
+    "backend_status": 200,
+    "worker_statuses": {
+      "background": 200,
+      "telegram": 200
+    },
+    "heartbeat_age_seconds": {
+      "background": 0.290698,
+      "telegram": 3.564622
+    },
+    "pod_ready_containers": 3,
+    "pod_restart_count": 0,
+    "migrate_exit0": true,
+    "all3_actual_image_index_match": true,
+    "registry_amd64_child_match": true,
+    "single_application_pod_single_telegram_container": true,
+    "pvcs_same_baseline": true,
+    "preservation_groups9_match": true,
+    "preservation_counts_equal": true,
+    "preservation_baseline_source": "private immutable before/after receipts independently compared, not a new full-domain DB snapshot",
+    "pair_old_retained_present_owner_match": true,
+    "pair_fact_counts": {
+      "old": 1,
+      "retained": 1
+    },
+    "new_relevant_owner_operations": 0,
+    "owner_phase": "0 UNVERIFIED",
+    "observed_build_provenance_revision_match": true,
+    "actual_OCI_config_revision_label": "UNVERIFIED: existing inspect pending; not conflated with build provenance",
+    "production_mutations_AI_updates_callbacks": 0,
+    "active_time": "unknown"
+  }
+}

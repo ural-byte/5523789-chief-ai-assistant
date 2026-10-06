@@ -396,3 +396,20 @@ JSON fixture paths остаются явными ограничениями. Sou
 завершены: Checker 613/109/4 PASS + Reviewer APPROVE. Открыта механическая
 публикация draft PR, CI и ранее разрешённая поставка в bigbang. Merge не выполняется.
 Настоящий owner Telegram criterion ещё PENDING, общий client PENDING/demo BLOCKED.
+
+Публикация и поставка 6 октября 2026: executable source
+`66e53cd189a20e02664a185aa7014023ea4a1b67`,
+[draft PR5](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/5).
+Оба source CI SUCCESS на третьей попытке; первые две не получили hosted runner
+и не запускали lint/тесты. Изменения source/workflow для повторов не выполнялись.
+Образ установлен в bigbang, миграция 0005 → 0006 завершилась, три процесса Ready;
+девять групп данных совпали до и после обновления.
+[Receipt и ссылки CI](../deployment/bigbang-uralbyte11.md).
+Новая реализация работает; настоящий Telegram owner criterion ещё PENDING.
+Merge и дополнительный C7 не выполнялись; общий client PENDING/demo BLOCKED.
+
+Независимая read-only проверка поставки PASS: 33 deployed файла и 50 published
+source hashes MATCH, точные digests, schema0006, три health200, heartbeat, один
+poller, прежние PVC и девять групп сохранённых данных. Отдельный OCI config label
+остаётся UNVERIFIED после ограниченного ожидания; build provenance совпал,
+эти разные проверки не объединяются. Owner AC7 по-прежнему UNVERIFIED.

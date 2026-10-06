@@ -138,3 +138,11 @@ PENDING и блокировка демонстрации по URALBYTE-9 ост�
 необратимая approval карточка → настоящий owner confirm → повторный вопрос только
 Лёша, без внутренних идентификаторов. Cancel сохраняет обе записи. До полного
 прохождения критерий UNVERIFIED, клиентский вердикт PENDING, демонстрация BLOCKED.
+
+Source URALBYTE-11: независимые Checker PASS (613 тестов, 109 дополнительных
+проверок и четыре реальных Yandex сценария), Reviewer APPROVE.
+[PR5](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/5), CI source SUCCESS.
+6 октября 2026 source обновлён в bigbang: миграция 0006, три процесса Ready,
+память и approvals сохранены. [Поставка](deployment/bigbang-uralbyte11.md).
+Настоящий owner Telegram flow остаётся UNVERIFIED. Общий клиентский вердикт
+PENDING/demo BLOCKED и прежние статусы URALBYTE-9/10 не меняются.
