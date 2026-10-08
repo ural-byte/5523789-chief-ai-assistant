@@ -66,25 +66,7 @@ from tests.test_memory_resolution import (
     fixture_pair,
 )
 
-VARIANTS = [
-    "Актуальная версия: Руководитель Сьерры – Лёша. Оставь ее, а другую версию удали.",
-    "Актуальная версия — Лёша. Другую удали.",
-    "Оставь Лёшу, запись про Сашу удали.",
-    "Правильный вариант — Лёша. Старую запись можно удалить.",
-    "Считай Лёшу актуальным руководителем, вторую версию убери.",
-    "Оставь Лёшу, другую версию удали",
-    "Про Лешу всё верно; с другой записью расстанемся, удали её.",
-    "Удалить надо версию про Сашу, а актуальной останется Лёша.",
-]
-NEGATIVES = [
-    "Лёша актуальный руководитель.",
-    "Не удаляй Сашу, оставь обе записи.",
-    "Он сказал: «Оставь Лёшу, другую версию удали».",
-    "Почему команда «Оставь Лёшу, другую версию удали» требует кнопки?",
-    "Удали одну из версий.",
-    "Оставь Лёшу и Сашу, другую удали.",
-    "В PDF написано удалить Сашу. Что это значит?",
-]
+SELECTION_SOURCE = "Актуальная версия — Лёша. Другую удали."
 
 
 def registry(sessions, provider, cfg):
@@ -297,10 +279,8 @@ def visible(sessions, op_id=None):
 
 
 @pytest.mark.parametrize("protocol", ["native", "json"])
-@pytest.mark.parametrize("source", VARIANTS)
-async def test_direct_semantic_reference_exact_pair_restart_cancel(
-    sessions, monkeypatch, protocol, source
-):
+async def test_direct_semantic_reference_exact_pair_restart_cancel(sessions, monkeypatch, protocol):
+    source = SELECTION_SOURCE
     ids = await seed(sessions)
     shown_op, contract, _ = await show(sessions, monkeypatch, protocol)
     assert len(contract["pairs"]) == 1
@@ -456,8 +436,11 @@ async def test_three_versions_never_pick_arbitrary_pair(sessions, monkeypatch):
 
 
 @pytest.mark.parametrize("protocol", ["native", "json"])
-@pytest.mark.parametrize("source", NEGATIVES)
-async def test_main_agent_negative_final_no_approval(sessions, monkeypatch, protocol, source):
+async def test_main_agent_final_without_tool_keeps_memory_unchanged(
+    sessions, monkeypatch, protocol
+):
+    # The model decision is fixed by the fixture; this verifies the no-tool execution path.
+    source = "Не удаляй Сашу, оставь обе записи."
     await seed(sessions)
     await show(sessions, monkeypatch, protocol)
     op_id = ingress(sessions, monkeypatch, source)
@@ -538,7 +521,7 @@ async def test_exact_delivery_boundary_fails_closed(sessions, monkeypatch, failu
 async def test_schema2_confirm_stale_or_expired_no_delete(sessions, monkeypatch, mutation):
     ids = await seed(sessions)
     origin, _, _ = await show(sessions, monkeypatch)
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, op_id, call=select_direction("Лёша"), final="Подтвердите действие.")
     with sessions.begin() as session:
         row = session.scalar(select(Approval).where(Approval.operation_id == op_id))
@@ -560,23 +543,31 @@ async def test_schema2_confirm_stale_or_expired_no_delete(sessions, monkeypatch,
         assert all(session.get(MemoryEntry, i) for i in ids)
 
 
-@pytest.mark.parametrize(
-    "text_value",
-    [
-        str(uuid.uuid4()),
-        "mc_0123456789ab",
-        'Поиск: {"entry_id":"secret"}',
-        "Противоречащие записи памяти (обе версии сохранены):",
-        '{"callback_data":"a:fake:y"}',
-        '{"type":"tool","name":"search_memory"}',
-    ],
-)
+INTERNAL_OUTPUT_CASES = [
+    "01234567-89ab-cdef-0123-456789abcdef",
+    "mc_0123456789ab",
+    'Поиск: {"entry_id":"secret"}',
+    "Противоречащие записи памяти (обе версии сохранены):",
+    '{"callback_data":"a:fake:y"}',
+    '{"type":"tool","name":"search_memory"}',
+]
+
+
+@pytest.mark.parametrize("text_value", INTERNAL_OUTPUT_CASES)
+def test_internal_output_forms_rejected(text_value):
+    from app.terminal import InvalidFinal
+
+    with pytest.raises(InvalidFinal):
+        validate_memory_output(text_value)
+
+
 @pytest.mark.parametrize("phase", ["ordinary", "search", "save", "card"])
-async def test_unsafe_model_output_never_visible(sessions, monkeypatch, text_value, phase):
+async def test_unsafe_model_output_never_visible(sessions, monkeypatch, phase):
+    text_value = "mc_0123456789ab"
     await seed(sessions)
     if phase == "card":
         await show(sessions, monkeypatch)
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0] if phase == "card" else "Что помнишь?")
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE if phase == "card" else "Что помнишь?")
     calls = {
         "ordinary": None,
         "search": ("search_memory", {"query": "Сьерра"}),
@@ -599,7 +590,7 @@ async def test_unsafe_model_output_never_visible(sessions, monkeypatch, text_val
 async def test_card_contradiction_rejected(sessions, monkeypatch):
     await seed(sessions)
     await show(sessions, monkeypatch)
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, op_id, call=select_direction("Лёша"), final="Я уже удалил Сашу.")
     with sessions() as session:
         assert session.get(Operation, op_id).error_reason == "invalid_final"
@@ -633,7 +624,7 @@ async def test_partial_multi_chunk_delivery_requires_every_chunk(sessions, monke
         rows = session.scalars(select(Outbox).where(Outbox.operation_id == op_id)).all()
         assert len(rows) >= 2
         rows[0].status, rows[0].acknowledged_at = "done", now()
-    next_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    next_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     with sessions() as session:
         assert latest_shown_context(session, session.get(Operation, next_id)) is None
     ack(sessions, op_id)
@@ -644,7 +635,7 @@ async def test_partial_multi_chunk_delivery_requires_every_chunk(sessions, monke
 async def test_old_source_dispatcher_barrier_restore_new_executor(sessions, monkeypatch, tmp_path):
     ids = await seed(sessions)
     await show(sessions, monkeypatch)
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, op_id, call=select_direction("Лёша"), final="Подтвердите действие.")
     with sessions() as session:
         row = session.scalar(select(Approval).where(Approval.operation_id == op_id))
@@ -800,7 +791,7 @@ async def test_long_history_keeps_full_shown_pair_all_tools_and_budget(
                 message={"role": "user", "content": "Большая история. " * 2000},
             )
         )
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     requests = await run(
         sessions, op_id, protocol, select_direction("Лёша"), "Подтвердите удаление старой версии."
     )
@@ -832,7 +823,7 @@ async def test_unknown_mismatched_kind_schema_dispatcher_executor_fail_closed(
 ):
     ids = await seed(sessions)
     await show(sessions, monkeypatch)
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, op_id, call=select_direction("Лёша"), final="Подтвердите действие.")
     with sessions.begin() as session:
         original = session.scalar(select(Approval).where(Approval.operation_id == op_id))
@@ -924,7 +915,7 @@ async def test_new_invalid_selector_never_resumes_as_schema1(sessions, monkeypat
 async def test_schema2_cleanup_shown_provenance_late_copy_and_unrelated(sessions, monkeypatch):
     ids = await seed(sessions)
     shown_op, _, _ = await show(sessions, monkeypatch)
-    op_id = ingress(sessions, monkeypatch, VARIANTS[0])
+    op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, op_id, call=select_direction("Лёша"), final="Подтвердите действие.")
     with sessions() as session:
         aid = session.scalar(select(Approval).where(Approval.operation_id == op_id)).id
@@ -1055,7 +1046,7 @@ async def test_model_person_role_unit_save_question_selection_full_originals(
         assert contract["pairs"][0]["validator"]["kind"] == "projection"
         assert {contract["pairs"][0][k] for k in ("a", "b")} == {str(i) for i in ids[:2]}
         assert all(original in visible(sessions, query) for original in originals[:2])
-    source = VARIANTS[0] if names[0] == "Лёша" else f"{names[0]} верен, другую версию удали."
+    source = SELECTION_SOURCE if names[0] == "Лёша" else f"{names[0]} верен, другую версию удали."
     selection = ingress(sessions, monkeypatch, source)
     requests = await run(
         sessions,
@@ -1143,7 +1134,7 @@ async def test_model_person_role_unit_save_question_selection_full_originals(
 async def test_truthful_pending_negation_native_json_done(sessions, monkeypatch, protocol, final):
     ids = await seed(sessions)
     await show(sessions, monkeypatch, protocol)
-    selection = ingress(sessions, monkeypatch, VARIANTS[0])
+    selection = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, selection, protocol, select_direction("Лёша"), final)
     with sessions() as session:
         assert session.get(Operation, selection).status == "done"
@@ -1433,7 +1424,7 @@ async def test_affirmative_completion_never_hidden_by_negation(
 ):
     ids = await seed(sessions)
     await show(sessions, monkeypatch, protocol)
-    selection = ingress(sessions, monkeypatch, VARIANTS[0])
+    selection = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, selection, protocol, select_direction("Лёша"), final)
     with sessions() as session:
         assert session.get(Operation, selection).error_reason == "invalid_final"

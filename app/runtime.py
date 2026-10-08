@@ -239,6 +239,37 @@ class Runtime:
         schemas = self.registry.schemas()
         if not memory_write_allowed(session, operation):
             schemas = [s for s in schemas if s["function"]["name"] != "save_memory"]
+
+        def compact(value):
+            if not isinstance(value, dict):
+                return value
+            result = {}
+            for key, item in value.items():
+                if key in {"title", "discriminator"}:
+                    continue
+                if key in {"properties", "patternProperties", "$defs", "definitions"}:
+                    item = {name: compact(schema) for name, schema in item.items()}
+                elif key in {"allOf", "anyOf", "oneOf", "prefixItems"}:
+                    item = [compact(schema) for schema in item]
+                elif key in {
+                    "items",
+                    "additionalProperties",
+                    "unevaluatedProperties",
+                    "contains",
+                    "not",
+                    "if",
+                    "then",
+                    "else",
+                    "propertyNames",
+                }:
+                    item = compact(item)
+                result[key] = item
+            return result
+
+        # Titles and OpenAPI discriminator mappings duplicate names/refs. The JSON Schema
+        # oneOf branches and their const kind fields retain the date validation contract.
+        for schema in schemas:
+            schema["function"]["parameters"] = compact(schema["function"]["parameters"])
         return schemas
 
     def _messages(self, operation):
@@ -317,6 +348,61 @@ class Runtime:
             else:
                 break
         return messages
+
+    def _complete_action(self, operation_id, invocation, lease):
+        """Finish a single built-in action only when the model declares the request complete."""
+        from app.domain_actions import CreateTask, PrepareMeeting
+
+        if type(self.registry.tools.get(invocation.name)) not in {CreateTask, PrepareMeeting}:
+            return False
+        if invocation.arguments.get("complete_request") is not True:
+            return False
+        if not invocation.result or invocation.result.get("presentation") != "canonical":
+            return False
+        with self.sessions.begin() as session:
+            op = self._guard(session, lease, operation_id)
+            ids = session.scalars(
+                select(Invocation.id).where(Invocation.operation_id == operation_id).limit(2)
+            ).all()
+            if ids != [invocation.id]:
+                return False
+            row = session.get(Invocation, invocation.id, with_for_update=True)
+            result = row.result
+            from app.memory_output import validate_memory_output
+
+            text = validate_memory_output(result["user_message"])
+            if not nonblank(text):
+                raise InvalidFinal()
+            # Reuse the same outbox key on recovery, even after a crash before completion.
+            enqueue_text(
+                session,
+                op,
+                text,
+                result.get("buttons"),
+                key_prefix=f"{operation_id}:invocation:{row.id}",
+            )
+            if row.model_result is None:
+                row.model_result = {
+                    "status": result["status"],
+                    "user_message": text,
+                    "presentation": "canonical",
+                }
+                session.add(
+                    History(
+                        operation_id=operation_id,
+                        owner_id=op.owner_id,
+                        message=result_message(row.call_id, row.model_result, self.protocol),
+                    )
+                )
+            session.add(
+                History(
+                    operation_id=operation_id,
+                    owner_id=op.owner_id,
+                    message={"role": "assistant", "content": text},
+                )
+            )
+            op.status = "done"
+        return True
 
     async def _invoke(self, operation, invocation, messages, lease, legacy_pending=False):
         with self.sessions.begin() as session:
@@ -401,6 +487,8 @@ class Runtime:
                             key_prefix=f"{operation.id}:invocation:{row.id}",
                         )
                 invocation.result = row.result
+        if self._complete_action(operation.id, invocation, lease):
+            return None
         if invocation.model_result is None:
             if invocation.result.get("presentation") == "grounded":
                 messages = grounded_messages(messages, self.protocol)
@@ -506,9 +594,10 @@ class Runtime:
                 .order_by(Invocation.ordinal)
             ).all()
         for invocation in pending:
-            messages.append(
-                await self._invoke(operation, invocation, messages, lease, legacy_pending=True)
-            )
+            result = await self._invoke(operation, invocation, messages, lease, legacy_pending=True)
+            if result is None:
+                return
+            messages.append(result)
         while True:
             with self.sessions() as session:
                 operation = session.get(Operation, operation_id)
@@ -711,6 +800,7 @@ class Runtime:
                 session.add(
                     History(operation_id=operation_id, owner_id=operation.owner_id, message=message)
                 )
+                ordinal_start = op.tool_steps
                 op.tool_steps += len(calls)
                 invocations = []
                 for index, call in enumerate(calls):
@@ -726,7 +816,7 @@ class Runtime:
                     row = Invocation(
                         operation_id=operation_id,
                         call_id=call.id,
-                        ordinal=operation.tool_steps + index,
+                        ordinal=ordinal_start + index,
                         name=call.name,
                         arguments=arguments,
                     )
@@ -735,4 +825,7 @@ class Runtime:
                     invocations.append(row)
             messages.append(message)
             for invocation in invocations:
-                messages.append(await self._invoke(operation, invocation, messages, lease))
+                result = await self._invoke(operation, invocation, messages, lease)
+                if result is None:
+                    return
+                messages.append(result)

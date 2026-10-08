@@ -49,6 +49,10 @@ class ActionArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=1000)
     date: DateSpec
+    complete_request: bool = Field(
+        default=False,
+        description="True only if this action completes every part of the user's request.",
+    )
 
 
 def source_text(ctx):

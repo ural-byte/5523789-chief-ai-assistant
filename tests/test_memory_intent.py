@@ -21,11 +21,7 @@ from tests.test_data_controls import prepare
 from tests.test_memory_documents import Embeddings
 from tests.test_storage import operation
 
-SOURCES = [
-    "Привет! Запомни: меня зовут Вова.",
-    "Мы обсудили проект. Сделай заметку на будущее: меня зовут Вова.",
-    "Запомни: «меня зовут Вова».",
-]
+SAVE_SOURCE = "Привет! Запомни: меня зовут Вова."
 FINAL = "Буду помнить, что вас зовут Вова."
 
 
@@ -56,9 +52,9 @@ def production_provider(sessions, protocol, transport):
 
 
 @pytest.mark.parametrize("protocol", ["native", "json"])
-@pytest.mark.parametrize("source", SOURCES)
-async def test_llm_selected_save_actual_result_final_and_replay(sessions, protocol, source):
-    # The mocked gateway checks orchestration and wire budgets, not semantic model quality.
+async def test_llm_selected_save_actual_result_final_and_replay(sessions, protocol):
+    # One scenario per protocol: the mocked gateway does not test phrase interpretation.
+    source = SAVE_SOURCE
     op_id = input_operation(sessions, source)
     generations = []
     args = {
@@ -96,10 +92,11 @@ async def test_llm_selected_save_actual_result_final_and_replay(sessions, protoc
                     )
                 }
             assert {s["function"]["name"] for s in tools} == Registry.allowed_names
-            assert tools == registry.schemas()
             with sessions() as session:
                 op = session.get(Operation, op_id)
-                messages = Runtime(sessions, provider, registry, protocol)._messages(op)
+                runtime = Runtime(sessions, provider, registry, protocol)
+                assert tools == runtime._schemas(session, op)
+                messages = runtime._messages(op)
             assert (
                 provider.estimate_request_budget(messages, tools)
                 + (provider.estimate_request_budget(messages, []))
@@ -172,7 +169,7 @@ async def test_llm_selected_save_actual_result_final_and_replay(sessions, protoc
 @pytest.mark.parametrize("protocol", ["native", "json"])
 @pytest.mark.parametrize("failure", ["embedding", "final", "blank", "schema"])
 async def test_save_failures_never_deliver_early_success(sessions, protocol, failure):
-    op_id = input_operation(sessions, SOURCES[0])
+    op_id = input_operation(sessions, SAVE_SOURCE)
     generations = 0
 
     def transport(request):
@@ -240,7 +237,7 @@ async def test_save_failures_never_deliver_early_success(sessions, protocol, fai
 
 @pytest.mark.parametrize("protocol", ["native", "json"])
 async def test_legacy_canonical_save_recovery_uses_model_final(sessions, protocol):
-    ctx = context(sessions, SOURCES[0])
+    ctx = context(sessions, SAVE_SOURCE)
     handler = SaveMemory(sessions, Embeddings())
     args = SaveArgs(text="имя Вова")
     prepared = await handler.prepare(ctx, args)
@@ -460,7 +457,7 @@ async def test_late_generation_save_arguments_never_persist(sessions, protocol):
 async def test_two_selected_save_invocations_share_one_entry_and_foreign_context_rejected(sessions):
     from dataclasses import replace
 
-    ctx = context(sessions, SOURCES[0])
+    ctx = context(sessions, SAVE_SOURCE)
     handler, args = SaveMemory(sessions, Embeddings()), SaveArgs(text="меня зовут Вова")
     ready = await handler.prepare(ctx, args)
     with sessions.begin() as session:
@@ -536,7 +533,7 @@ def test_save_projection_keeps_entry_identity_or_rejects_insufficient_budget():
 async def test_actual_sized_json_save_with_extra_wire_envelope_reaches_model_final(sessions):
     from app.providers import wire_bytes
 
-    op_id = input_operation(sessions, SOURCES[0])
+    op_id = input_operation(sessions, SAVE_SOURCE)
     with sessions.begin() as session:
         op = session.get(Operation, op_id)
         op.timezone = "Asia/Yekaterinburg"
@@ -574,9 +571,11 @@ async def test_actual_sized_json_save_with_extra_wire_envelope_reaches_model_fin
             with sessions() as session:
                 op = session.get(Operation, op_id)
             messages = runtime._messages(op)
-            tools = registry.schemas()
+            with sessions() as session:
+                tools = runtime._schemas(session, session.get(Operation, op_id))
             measurements["first_request"] = provider.estimate_request_budget(messages, tools)
-            measurements["legacy_first_request"] = legacy_size(messages, tools)
+            assert measurements["first_request"] == wire_bytes(payload)
+            measurements["legacy_first_request"] = legacy_size(messages, registry.schemas())
             message = {"role": "assistant", "content": content, "reasoning_content": ""}
             # Provider-only metadata must not displace the factual result or final generation.
             target = 3277 + 2048
@@ -614,7 +613,9 @@ async def test_actual_sized_json_save_with_extra_wire_envelope_reaches_model_fin
     assert measurements["first_request"] < measurements["legacy_first_request"] - 600
     assert 16000 - (measurements["first_request"] + measurements["post_tool_final"]) >= 900
     with sessions() as session:
-        assert session.get(Operation, op_id).status == "done"
+        op = session.get(Operation, op_id)
+        assert op.status == "done"
+        assert op.input_spent == measurements["first_request"] + measurements["post_tool_final"]
         assert len(session.scalars(select(MemoryEntry)).all()) == 1
         assert len(session.scalars(select(Fact)).all()) == 1
         assert [o.payload["text"] for o in session.scalars(select(Outbox))] == [FINAL]
