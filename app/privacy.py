@@ -21,6 +21,59 @@ def owner_lock(session, owner_id):
     return state
 
 
+def memory_write_allowed(session, operation):
+    fence = session.get(Tombstone, f"memory-write:{operation.id}")
+    if fence is not None and fence.owner_id == operation.owner_id:
+        return False
+    from app.data_controls import digest
+    from app.domain_actions import Approval
+    from app.providers import ProviderError
+
+    # Executed legacy snapshots predate scoped tombstones but retain their approved boundary.
+    approved = session.scalar(
+        select(Approval)
+        .where(
+            Approval.owner_id == operation.owner_id,
+            Approval.action_kind == "data_deletion",
+            Approval.status.in_({"executing", "executed"}),
+            Approval.approved_at.is_not(None),
+            Approval.payload["scope"].astext.in_({"memory", "reset"}),
+            Approval.payload["operation_ids"].contains([str(operation.id)]),
+        )
+        .limit(1)
+    )
+    if approved is None:
+        return True
+    payload = approved.payload
+    if payload.get("owner_id") != operation.owner_id or payload.get("hash") != digest(
+        {key: value for key, value in payload.items() if key != "hash"}
+    ):
+        raise ProviderError("invalid_deletion_snapshot")
+    return False
+
+
+def fence_memory_writes(session, owner_id, operation_ids, approval_id):
+    # The caller holds the owner lock; the scoped fence preserves other domain actions.
+    for operation_id in operation_ids:
+        operation = session.get(Operation, operation_id)
+        if operation is None:
+            continue
+        if operation.owner_id != owner_id:
+            raise ValueError("foreign_memory_producer")
+        key = f"memory-write:{operation.id}"
+        if not session.get(Tombstone, key):
+            session.add(Tombstone(key=key, owner_id=owner_id, approval_id=approval_id))
+
+
+def guard_memory_write(session, operation, owner_id):
+    from app.providers import ProviderError
+
+    if operation.owner_id != owner_id:
+        raise LeaseLost("foreign memory producer")
+    if not memory_write_allowed(session, operation):
+        raise ProviderError("memory_write_revoked")
+
+
 def guard_operation(session, operation_id, lease=None, context=False):
     from app.queue import require_lease
 

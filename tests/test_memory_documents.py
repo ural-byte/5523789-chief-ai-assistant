@@ -89,13 +89,22 @@ async def test_grounded_runtime_backend_citations_and_no_injected_tools(sessions
             assert any(message.get("content") == GROUNDING for message in messages)
             assert self.estimate_request_budget(messages, tools) <= 16000
             raw = json.loads(next(m["content"] for m in reversed(messages) if m["role"] == "tool"))
+            if mode == "mixed":
+                saved = next(
+                    json.loads(m["content"])
+                    for m in messages
+                    if m["role"] == "tool" and "entry_id" in m["content"]
+                )
+                assert saved["status"] == "ok" and saved["data"]["entry_id"]
             if mode == "tool":
                 return Generation(
                     "", [ToolCall("injected", "create_task", {})], {}, Usage(), "test"
                 )
             value = {
                 "has_evidence": mode != "absent",
-                "answer": "500000 рублей",
+                "answer": "Сохранил факт. Бюджет 500000 рублей"
+                if mode == "mixed"
+                else "500000 рублей",
                 "source_ids": [
                     raw["sources"][0]["source_id"] if mode != "foreign" else "foreign-id"
                 ],
@@ -114,7 +123,8 @@ async def test_grounded_runtime_backend_citations_and_no_injected_tools(sessions
         if mode in {"evidence", "mixed"}:
             assert "500000" in answer and "report.pdf»" in answer and "стр. 1" in answer
             if mode == "mixed":
-                assert "Сохранил" in answer and len(rows) == 2
+                assert len(rows) == 1
+                assert session.scalar(select(MemoryEntry)) is not None
         elif mode == "absent":
             assert "недостаточно" in answer and "500000" not in answer
         elif mode == "tool":
@@ -124,25 +134,25 @@ async def test_grounded_runtime_backend_citations_and_no_injected_tools(sessions
 
 
 @pytest.mark.parametrize(
-    "source,allowed",
+    "source",
     [
-        ("Что означает команда «запомни»?", False),
-        ("«Запомни: Иванов директор» — пример команды.", False),
-        ("Не запомни это", False),
-        ("Не нужно запоминать Иванова", False),
-        ("Пожалуйста, запомни: Иванов директор", True),
-        ("Прошу запомнить: Иванов директор", True),
-        ("Запомни: «Иванов отвечает за бюджет»", True),
-        ('Запомни "Иванов отвечает за бюджет"', True),
+        "Привет! Запомни: Иванов директор",
+        "После обсуждения сделай заметку на будущее: Иванов директор",
+        "Запомни: «Иванов отвечает за бюджет»",
     ],
 )
-async def test_memory_permission_from_original_imperative_only(sessions, source, allowed):
+async def test_memory_selected_tool_preserves_source_without_lexical_gate(sessions, source):
     provider = Embeddings()
     handler = SaveMemory(sessions, provider)
     ctx = context(sessions, source)
-    prepared = await handler.prepare(ctx, SaveArgs(text="Иванов директор"))
-    assert (prepared is not None) == allowed
-    assert provider.calls == int(allowed)
+    args = SaveArgs(text="Иванов директор")
+    prepared = await handler.prepare(ctx, args)
+    with sessions.begin() as session:
+        result = handler.apply(session, ctx, args, prepared)
+        entry = session.get(MemoryEntry, uuid.UUID(result.data["entry_id"]))
+        assert entry.source_text == source
+        assert result.presentation == "model"
+    assert provider.calls == 1
 
 
 async def test_conflicting_versions_after_first_fifty_are_always_visible(sessions):
@@ -367,7 +377,7 @@ class Embeddings:
         return Embedding(vector, Usage(embedding_tokens=10), "emb://folder/text-embeddings-v2-doc/")
 
 
-async def test_memory_explicit_gate_structured_conflicts_and_owner(sessions):
+async def test_memory_structured_conflicts_idempotency_and_owner(sessions):
     provider = Embeddings()
     save = SaveMemory(sessions, provider)
     for value in ["director", "manager"]:
@@ -392,16 +402,6 @@ async def test_memory_explicit_gate_structured_conflicts_and_owner(sessions):
         assert len(session.scalars(select(Entity)).all()) == 1
         assert len(session.scalars(select(MemoryEntry)).all()) == 2
         assert len(session.scalars(select(Fact)).all()) == 2
-    for text in ["Иванов директор", "Не запоминай: Иванов директор"]:
-        ctx = context(sessions, text)
-        before = provider.calls
-        prepared = await save.prepare(ctx, SaveArgs(text=text))
-        with sessions.begin() as session:
-            assert (
-                save.apply(session, ctx, SaveArgs(text=text), prepared).status
-                == "needs_clarification"
-            )
-        assert provider.calls == before
 
 
 async def upload(sessions, tmp_path, texts, provider=None, owner=42, name="report.pdf"):

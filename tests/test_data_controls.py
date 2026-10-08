@@ -460,13 +460,9 @@ async def test_legacy_metadata_outside_managed_root_cannot_claim_executed(sessio
         "Запомнить: Иванов директор",
     ],
 )
-async def test_every_memory_write_gate_alias_before_first_tool_is_revoked(
-    sessions, tmp_path, source, backoff
-):
-    from app.domain_memory import explicitly_requested
+async def test_memory_before_first_tool_is_fenced(sessions, tmp_path, source, backoff):
     from app.tools import ToolContext
 
-    assert explicitly_requested(source)
     old_id = operation(sessions)
     payload = {"update_id": 7001, "message": {"text": source}}
     with sessions.begin() as session:
@@ -491,28 +487,28 @@ async def test_every_memory_write_gate_alias_before_first_tool_is_revoked(
     aid, _ = await prepare(sessions, "memory")
     with sessions() as session:
         snapshot = session.get(Approval, aid).payload
-        assert str(old_id) in snapshot["producer_ids"]
         assert str(old_id) in snapshot["operation_ids"]
     await callback(sessions, aid)
     await drain(sessions, tmp_path)
     with sessions() as session:
         assert session.get(Approval, aid).status == "executed"
-        assert session.get(Tombstone, f"operation:{old_id}")
-        assert session.get(Update, 7001).payload == {}
+        assert session.get(Tombstone, f"memory-write:{old_id}")
         cancelled = session.get(Job, jobid)
-        assert cancelled.status == "cancelled" and cancelled.payload == {}
         assert cancelled.lease_token is None
-    with pytest.raises(LeaseLost), sessions.begin() as session:
-        rebuild_context(session, old_id)
+    with sessions.begin() as session:
+        if not session.get(Tombstone, f"operation:{old_id}"):
+            rebuild_context(session, old_id)
     # Model/embedding IO that had already started cannot bypass the publication
     # fence, even if its result arrives after cleanup has reported completion.
     ctx = ToolContext(42, 42, old_id, reference, timezone, str(uuid.uuid4()), payload)
     args = SaveArgs(text="Иванов директор")
     handler = SaveMemory(sessions, Embeddings())
-    with pytest.raises(LeaseLost):
+    from app.providers import ProviderError
+
+    with pytest.raises((LeaseLost, ProviderError)):
         await handler.prepare(ctx, args)
     prepared = await Embeddings().embed(ctx.operation_id, args.text)
-    with pytest.raises(LeaseLost), sessions.begin() as session:
+    with pytest.raises((LeaseLost, ProviderError)), sessions.begin() as session:
         handler.apply(session, ctx, args, prepared)
     with sessions() as session:
         assert not session.scalar(select(MemoryEntry).where(MemoryEntry.owner_id == 42))

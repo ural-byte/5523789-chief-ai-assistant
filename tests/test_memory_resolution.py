@@ -32,6 +32,7 @@ from app.models import (
     now,
 )
 from app.privacy import rebuild_context
+from app.providers import ProviderError
 from app.queue import LeaseLost, enqueue_text
 from app.tools import ToolContext
 from tests.test_actions import callback
@@ -198,7 +199,11 @@ async def test_exact_ack_pair_cross_self_two_old_facts_and_shared_producer(
     # Rebuild retains the live mutation replay without recreating old or duplicating retain.
     with sessions.begin() as session:
         rebuild_context(session, contexts[1].operation_id)
-    assert await handler.prepare(contexts[1], SaveArgs(text=RETAIN)) == "existing"
+    if shared:
+        with pytest.raises(ProviderError, match="memory_write_revoked"):
+            await handler.prepare(contexts[1], SaveArgs(text=RETAIN))
+    else:
+        assert await handler.prepare(contexts[1], SaveArgs(text=RETAIN)) == "existing"
     if shared:
         # Only a shared source was redacted; an independent retained source remains authorized.
         with sessions.begin() as session:
@@ -220,11 +225,14 @@ async def test_exact_ack_pair_cross_self_two_old_facts_and_shared_producer(
             str(new_invocation),
             contexts[1].source_update,
         )
-        assert await handler.prepare(stale_ctx, SaveArgs(text=OLD)) is None
+        with pytest.raises(ProviderError, match="memory_write_revoked"):
+            await handler.prepare(stale_ctx, SaveArgs(text=OLD))
         ready = await Embeddings().embed(stale_ctx.operation_id, OLD)
-        with sessions.begin() as session:
-            result = handler.apply(session, stale_ctx, SaveArgs(text=OLD), ready)
-            assert result.status == "needs_clarification"
+        with (
+            pytest.raises(ProviderError, match="memory_write_revoked"),
+            sessions.begin() as session,
+        ):
+            handler.apply(session, stale_ctx, SaveArgs(text=OLD), ready)
 
 
 @pytest.mark.parametrize(

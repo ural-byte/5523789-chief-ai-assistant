@@ -889,6 +889,9 @@ def scrub_references(session, owner, entry_ids, approval_id, current=None):
             affected_inv.add(inv.id)
             copied_ops.add(inv.operation_id)
             inv.arguments, inv.result, inv.model_result = {}, {}, {}
+    from app.privacy import fence_memory_writes
+
+    fence_memory_writes(session, owner, copied_ops, approval_id)
     for op_id in copied_ops:
         operation = session.get(Operation, op_id)
         if operation.update_id is not None:

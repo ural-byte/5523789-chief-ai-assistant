@@ -91,6 +91,7 @@ class YandexProvider:
                         "tools": tools,
                     },
                     ensure_ascii=False,
+                    separators=(",", ":"),
                 ),
             }
             payload["messages"] = [instruction, *messages]

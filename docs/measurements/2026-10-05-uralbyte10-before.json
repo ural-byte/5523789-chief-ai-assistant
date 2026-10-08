@@ -1,0 +1,41 @@
+{
+  "algorithmic_write_gate_allowed": false,
+  "calls": [
+    {
+      "latency_ms": 1536,
+      "status": "succeeded",
+      "type": "generation"
+    },
+    {
+      "latency_ms": 1628,
+      "status": "succeeded",
+      "type": "generation"
+    }
+  ],
+  "delivery_state": "delivered",
+  "final_delivery_ack_at": "2026-10-05T06:24:18.929592+00:00",
+  "finals": [
+    {
+      "acknowledged": true,
+      "attempts": 1,
+      "matches_reported_rejection": true,
+      "status": "done"
+    }
+  ],
+  "genuine_update": true,
+  "matches_reported_example": true,
+  "operation_id": "a22b972e-bdc9-4312-aa08-c86ea8dbd5f4",
+  "private_text_included": false,
+  "received_at": "2026-10-05T06:24:16.544299+00:00",
+  "sampled_at": "2026-10-05T06:39:11.551966+00:00",
+  "status": "done",
+  "tools": [
+    {
+      "matches_reported_rejection": true,
+      "memory_entries_created": 0,
+      "name": "save_memory",
+      "presentation": "canonical",
+      "result_status": "needs_clarification"
+    }
+  ]
+}
