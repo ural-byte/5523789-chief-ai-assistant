@@ -25,13 +25,21 @@ def require_lease(session, item_type, item_id, token):
     return row
 
 
-def claim(session, item_type, owner_id=None):
+def claim(
+    session, item_type, owner_id=None, include_kinds=None, exclude_kinds=None, maintenance=False
+):
     timestamp = now()
     if owner_id is not None:
         from app.privacy import owner_lock
 
         owner_lock(session, owner_id)
-    if item_type is Job and owner_id is not None:
+    if item_type is Outbox and owner_id is not None:
+        from app.terminal import delivery_sweep
+
+        delivery_sweep(session, owner_id)
+        session.flush()
+        timestamp = now()
+    if item_type is Job and owner_id is not None and not maintenance:
         active = session.scalar(
             select(Job.id)
             .join(Operation)
@@ -47,6 +55,10 @@ def claim(session, item_type, owner_id=None):
         (item_type.status == "pending")
         | ((item_type.status == "running") & (item_type.lease_until <= timestamp)),
     )
+    if include_kinds:
+        query = query.where(item_type.kind.in_(include_kinds))
+    if exclude_kinds:
+        query = query.where(item_type.kind.not_in(exclude_kinds))
     if owner_id is not None:
         query = query.join(Operation).where(Operation.owner_id == owner_id)
     priority = (
@@ -71,15 +83,40 @@ def claim(session, item_type, owner_id=None):
 
 def renew(session, item_type, item_id, token):
     row = require_lease(session, item_type, item_id, token)
+    if item_type is Outbox:
+        from app.terminal import fail_delivery
+
+        if row.delivery_deadline_at <= now():
+            fail_delivery(session, row, "deadline")
+            return False
     row.lease_until = now() + timedelta(seconds=LEASE_SECONDS)
+    return True
 
 
-def acknowledge(session, item_type, item_id, token, error=None):
+def acknowledge(
+    session, item_type, item_id, token, error=None, failure_class=None, retry_after=None
+):
     row = require_lease(session, item_type, item_id, token)
     row.error_code = error
+    if item_type is Outbox and error:
+        from app.terminal import MAX_SEND_ATTEMPTS, fail_delivery
+
+        failure_class = failure_class or "network"
+        if (
+            failure_class in {"permanent", "payload"}
+            or row.attempts >= MAX_SEND_ATTEMPTS
+            or row.delivery_deadline_at <= now()
+        ):
+            fail_delivery(session, row, failure_class)
+            return
+        row.failure_class = failure_class
     row.status = "done" if error is None else "pending"
     if error:
-        row.available_at = now() + timedelta(seconds=min(300, 2 ** min(row.attempts, 8)))
+        row.available_at = now() + timedelta(
+            seconds=(retry_after if retry_after is not None else 2 ** max(0, row.attempts - 1))
+            if item_type is Outbox
+            else min(300, 2 ** min(row.attempts, 8))
+        )
     row.lease_until = None
     row.lease_token = None
     if item_type is Outbox and error is None:
@@ -101,7 +138,21 @@ def heartbeat(session, name):
         session.add(Heartbeat(name=name))
 
 
-def enqueue_text(session, operation, text_value, buttons=None, key_prefix=None, purpose="final"):
+def enqueue_text(
+    session,
+    operation,
+    text_value,
+    buttons=None,
+    key_prefix=None,
+    purpose="final",
+    terminal_write=False,
+):
+    from app.terminal import InvalidFinal, nonblank
+
+    if not nonblank(text_value):
+        raise InvalidFinal()
+    if purpose == "final" and operation.error_reason and not terminal_write:
+        raise LeaseLost("terminal revision retired")
     # Telegram's limit is 4096 Unicode characters; leave room for server-side counting.
     chunks = []
     chunk = ""
@@ -113,7 +164,8 @@ def enqueue_text(session, operation, text_value, buttons=None, key_prefix=None, 
             chunk, units = "", 0
         chunk += char
         units += size
-    chunks.append(chunk or "Не удалось подготовить ответ. Попробуйте уточнить запрос.")
+    chunks.append(chunk)
+    chunks = [part for part in chunks if nonblank(part)]
     for index, chunk in enumerate(chunks):
         key = f"{key_prefix or str(operation.id) + ':reply'}:{index}"
         if session.scalar(select(Outbox.id).where(Outbox.key == key)):
@@ -128,5 +180,6 @@ def enqueue_text(session, operation, text_value, buttons=None, key_prefix=None, 
                 payload=payload,
                 operation_id=operation.id,
                 purpose=purpose,
+                terminal_revision=operation.terminal_revision,
             )
         )

@@ -6,14 +6,11 @@ from contextlib import suppress
 import httpx
 from sqlalchemy import select
 
-from app.bootstrap import install
 from app.config import settings
-from app.db import session_factory
-from app.domain_actions import scheduler_loop
 from app.models import Job, Operation
-from app.providers import YandexProvider
 from app.queue import LeaseLost, acknowledge, claim, enqueue_text, heartbeat, renew
 from app.runtime import Runtime
+from app.terminal import ExecutionExpired, nonblank
 from app.tools import registry
 
 log = logging.getLogger("workers")
@@ -27,10 +24,17 @@ async def lease_renewal(sessions, item, token):
             heartbeat(session, "background")
 
 
-async def background_once(sessions, provider, config):
+async def background_once(sessions, provider, config, maintenance=False, supervised=False):
     with sessions.begin() as session:
         heartbeat(session, "background")
-        job = claim(session, Job, config.allowed_telegram_user_id)
+        job = claim(
+            session,
+            Job,
+            config.allowed_telegram_user_id,
+            include_kinds={"data_cleanup"} if maintenance else None,
+            exclude_kinds={"data_cleanup"} if supervised else None,
+            maintenance=maintenance,
+        )
     if job is None:
         return False
     token = job.lease_token
@@ -88,6 +92,14 @@ async def background_once(sessions, provider, config):
             from app.latency import finish_operation
 
             finish_operation(session, session.get(Operation, job.operation_id))
+    except ExecutionExpired:
+        from app.privacy import owner_lock
+        from app.terminal import terminal_error
+
+        with sessions.begin() as session:
+            op = session.get(Operation, job.operation_id)
+            owner_lock(session, op.owner_id)
+            terminal_error(session, op, "deadline")
     except LeaseLost:
         log.warning("lease_lost job=%s", job.id)
         with sessions.begin() as session:
@@ -116,22 +128,15 @@ async def background_once(sessions, provider, config):
 
 
 async def background():
-    config, sessions = settings(), session_factory()
-    provider = YandexProvider(config, sessions)
-    install(sessions, provider, config)
-    scheduler = asyncio.create_task(scheduler_loop(sessions, config.allowed_telegram_user_id))
-    try:
-        await agent_loop(sessions, provider, config)
-    finally:
-        scheduler.cancel()
-        with suppress(asyncio.CancelledError):
-            await scheduler
+    from app.supervisor import supervise
+
+    await supervise(settings())
 
 
 async def agent_loop(sessions, provider, config):
     while True:
         try:
-            worked = await background_once(sessions, provider, config)
+            worked = await background_once(sessions, provider, config, supervised=True)
             if not worked:
                 await asyncio.sleep(1)
         except Exception as exc:
@@ -183,6 +188,7 @@ async def poll_once(backend, bot):
 async def deliver_once(backend, bot):
     import time
 
+    claim_started = time.monotonic()
     claimed = await backend.post("/internal/outbox/claim")
     claimed.raise_for_status()
     item = claimed.json()
@@ -197,19 +203,53 @@ async def deliver_once(backend, bot):
     if renewed.status_code == 409:
         return
     renewed.raise_for_status()
-    error, started = None, time.monotonic()
+    error, failure_class, retry_after, started = None, None, None, time.monotonic()
     try:
-        sent = await bot.post(item["kind"], json=item["payload"])
-        sent.raise_for_status()
-        if not sent.json().get("ok"):
-            error = "telegram_rejected"
+        budget = min(10, item.get("remaining_seconds", 10) - (time.monotonic() - claim_started))
+        if budget <= 0 or (
+            item["kind"] == "sendMessage" and not nonblank(item["payload"].get("text"))
+        ):
+            error, failure_class = "telegram_payload", "payload"
+        else:
+            sent = await bot.post(
+                item["kind"],
+                json=item["payload"],
+                timeout=httpx.Timeout(budget, connect=min(5, budget)),
+            )
+            try:
+                body = sent.json()
+            except ValueError:
+                body = {}
+            if not isinstance(body, dict):
+                body = {}
+            code = body.get("error_code", sent.status_code)
+            if not isinstance(code, int):
+                code = sent.status_code
+            if sent.is_error or not body.get("ok"):
+                error = "telegram_rejected"
+                failure_class = (
+                    "permanent"
+                    if code in {400, 401, 403}
+                    else "rate_limit"
+                    if code == 429
+                    else "server"
+                )
+                candidate = body.get("parameters", {}).get("retry_after")
+                if (
+                    code == 429
+                    and isinstance(candidate, (int, float))
+                    and not isinstance(candidate, bool)
+                ):
+                    retry_after = max(0, min(86400, candidate))
     except (httpx.HTTPError, ValueError):
-        error = "telegram_send_failed"
+        error, failure_class = "telegram_send_failed", "network"
     ack = await backend.post(
         f"/internal/outbox/{item['id']}/ack",
         json={
             "lease_token": item["lease_token"],
             "error": error,
+            "failure_class": failure_class,
+            "retry_after": retry_after,
             "send_latency_ms": round((time.monotonic() - started) * 1000),
         },
     )

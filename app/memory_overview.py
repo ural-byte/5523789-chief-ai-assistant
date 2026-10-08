@@ -33,6 +33,15 @@ def truncate(value, limit=3500):
     return value
 
 
+def render_entry(entry, facts):
+    text = entry.original
+    if facts:
+        text += "\nФакты (версии сохраняются отдельно):\n" + "\n".join(
+            f"{entity.name} / {fact.predicate}: {fact.value}" for fact, entity in facts
+        )
+    return truncate(text)
+
+
 def memory_page(session, op, cursor=None):
     started = time.monotonic()
     guard_operation(session, op.id)
@@ -74,12 +83,21 @@ def memory_page(session, op, cursor=None):
         fact_groups.setdefault(fact.entry_id, []).append((fact, entity))
     for entry in entries:
         facts = fact_groups.get(entry.id, [])
-        text = entry.original
-        if facts:
-            text += "\nФакты (версии сохраняются отдельно):\n" + "\n".join(
-                f"{entity.name} / {fact.predicate}: {fact.value}" for fact, entity in facts
-            )
-        lines.append(truncate(text))
+        lines.append(render_entry(entry, facts))
+    from app.memory_resolution import remember_context
+    from app.models import Invocation
+
+    # Render provenance shares the same owner transaction as the returned text/outbox.
+    invocation = Invocation(
+        operation_id=op.id,
+        call_id=f"overview:{uuid.uuid4()}",
+        name="memory_overview",
+        arguments={},
+        result={"entry_ids": [str(e.id) for e in entries]},
+    )
+    session.add(invocation)
+    session.flush()
+    remember_context(session, op, invocation.id, {e.id for e in entries})
     buttons = (
         [[{"text": "Следующие записи", "callback_data": f"m:{entries[-1].id}"}]] if more else []
     )

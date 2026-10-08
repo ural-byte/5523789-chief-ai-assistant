@@ -106,6 +106,7 @@ def ingest(payload: dict, x_local_upload: bool = Header(default=False)):
         else:
             from app.data_controls import deletion_scope
             from app.memory_overview import overview_requested
+            from app.memory_resolution import resolution_selector
 
             source = message.get("text", "")
             scope = deletion_scope(source)
@@ -114,6 +115,8 @@ def ingest(payload: dict, x_local_upload: bool = Header(default=False)):
                 if scope
                 else ("memory_overview" if overview_requested(source) else "agent")
             )
+            if resolution_selector(source):
+                kind = "memory_resolution"
             if scope:
                 op.scenario = "data_control"
             session.add(
@@ -123,6 +126,7 @@ def ingest(payload: dict, x_local_upload: bool = Header(default=False)):
                     message={"role": "user", "content": message.get("text", "")},
                 )
             )
+        op.deadline_at = op.received_at + timedelta(seconds=900 if kind == "document" else 90)
         if not callback:
             session.add(
                 Activity(
@@ -183,6 +187,7 @@ def claim_outbox():
             "lease_token": str(row.lease_token),
             "kind": row.kind,
             "payload": row.payload,
+            "remaining_seconds": max(0, (row.delivery_deadline_at - now()).total_seconds()),
         }
 
 
@@ -190,13 +195,25 @@ class Receipt(BaseModel):
     lease_token: uuid.UUID
     error: str | None = Field(default=None, pattern="^[a-zA-Z0-9_]{1,64}$")
     send_latency_ms: int | None = Field(default=None, ge=0, le=300000)
+    failure_class: str | None = Field(
+        default=None, pattern="^(permanent|network|rate_limit|server|payload)$"
+    )
+    retry_after: float | None = Field(default=None, ge=0, le=86400)
 
 
 @app.post("/internal/outbox/{item_id}/ack", dependencies=[Depends(auth)])
 def ack(item_id: uuid.UUID, receipt: Receipt):
     try:
         with session_factory().begin() as session:
-            acknowledge(session, Outbox, item_id, receipt.lease_token, receipt.error)
+            acknowledge(
+                session,
+                Outbox,
+                item_id,
+                receipt.lease_token,
+                receipt.error,
+                receipt.failure_class,
+                receipt.retry_after,
+            )
             session.get(Outbox, item_id).send_latency_ms = receipt.send_latency_ms
     except LeaseLost as exc:
         raise HTTPException(409, "Lease lost") from exc
@@ -207,7 +224,9 @@ def ack(item_id: uuid.UUID, receipt: Receipt):
 def renew_outbox(item_id: uuid.UUID, receipt: Receipt):
     try:
         with session_factory().begin() as session:
-            renew(session, Outbox, item_id, receipt.lease_token)
+            valid = renew(session, Outbox, item_id, receipt.lease_token)
+        if not valid:
+            raise HTTPException(409, "Lease lost")
     except LeaseLost as exc:
         raise HTTPException(409, "Lease lost") from exc
     return {"ok": True}
@@ -294,12 +313,14 @@ def claim_activity():
             .where(
                 Operation.owner_id == settings().allowed_telegram_user_id,
                 Operation.status != "cancelled",
+                Operation.delivery_state != "failed",
                 (Operation.status.not_in({"done", "error"}))
                 | select(Outbox.id)
                 .where(
                     Outbox.operation_id == Operation.id,
                     Outbox.purpose == "final",
                     Outbox.kind == "sendMessage",
+                    Outbox.terminal_revision == Operation.terminal_revision,
                     Outbox.status.in_({"pending", "running"}),
                 )
                 .exists(),

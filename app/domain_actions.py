@@ -38,6 +38,7 @@ class Approval(Base):
     chat_id: Mapped[int] = mapped_column(BigInteger)
     payload: Mapped[dict] = mapped_column(JSONB)
     action_kind: Mapped[str] = mapped_column(String, default="meeting")
+    stale_reason: Mapped[str | None] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, default="pending")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -252,6 +253,8 @@ async def handle_callback(sessions, job, lease):
             if approval_id
             else None
         )
+        if row and row.action_kind not in {"meeting", "data_deletion", "memory_resolution"}:
+            row = None
         if row:
             if row.status == "pending" and row.expires_at <= now():
                 row.status = "expired"
@@ -260,8 +263,16 @@ async def handle_callback(sessions, job, lease):
                     row.status = "cancelled"
                     message = (
                         "Действие отменено."
-                        if row.action_kind == "data_deletion"
+                        if row.action_kind != "meeting"
                         else "Встреча отменена."
+                    )
+                elif row.action_kind == "memory_resolution":
+                    from app.memory_resolution import execute_resolution
+
+                    message = (
+                        "Старая запись и связанные копии удалены. Актуальная версия сохранена."
+                        if execute_resolution(session, row)
+                        else "Данные изменились. Подготовьте действие заново."
                     )
                 elif row.action_kind == "data_deletion":
                     from app.data_controls import fence_delete
@@ -282,10 +293,11 @@ async def handle_callback(sessions, job, lease):
                     "simulated": "Встреча уже выполнена в режиме симуляции.",
                     "cancelled": (
                         "Действие уже отменено."
-                        if row.action_kind == "data_deletion"
+                        if row.action_kind != "meeting"
                         else "Встреча уже отменена."
                     ),
                     "expired": "Срок подтверждения истёк.",
+                    "stale": "Данные изменились. Подготовьте действие заново.",
                     "executing": "Удаление продолжается. Сообщу, когда оно завершится.",
                     "executed": "Данные уже удалены. Повторное удаление не выполняется.",
                 }.get(row.status, message)

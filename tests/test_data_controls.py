@@ -509,7 +509,9 @@ async def test_every_memory_write_gate_alias_before_first_tool_is_revoked(
     ctx = ToolContext(42, 42, old_id, reference, timezone, str(uuid.uuid4()), payload)
     args = SaveArgs(text="Иванов директор")
     handler = SaveMemory(sessions, Embeddings())
-    prepared = await handler.prepare(ctx, args)
+    with pytest.raises(LeaseLost):
+        await handler.prepare(ctx, args)
+    prepared = await Embeddings().embed(ctx.operation_id, args.text)
     with pytest.raises(LeaseLost), sessions.begin() as session:
         handler.apply(session, ctx, args, prepared)
     with sessions() as session:

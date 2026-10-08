@@ -10,7 +10,7 @@ import httpx
 from sqlalchemy import select
 
 from app.config import Settings
-from app.models import AICall
+from app.models import AICall, now
 from app.pricing import Pricing, Usage, normalize_usage
 
 MAX_INPUT = 16000
@@ -103,7 +103,7 @@ class YandexProvider:
     async def _request(self, operation_id, kind, model, payload, lease=None):
         logical_id = uuid.uuid4()
         usage = Usage()
-        for attempt in range(1, self.config.ai_attempts + 1):
+        for attempt in range(1, min(2, self.config.ai_attempts) + 1):
             snapshot = self.pricing.snapshot(model)
             with self.sessions.begin() as session:
                 from app.privacy import guard_operation
@@ -131,6 +131,14 @@ class YandexProvider:
                 session.add(event)
                 session.flush()
                 event_id = event.id
+            budget = max(
+                0.001,
+                min(
+                    45,
+                    self.config.ai_timeout_seconds,
+                    (operation.deadline_at - now()).total_seconds(),
+                ),
+            )
             started = time.monotonic()
             error = None
             response_data = None
@@ -141,7 +149,7 @@ class YandexProvider:
                 if not self.config.ai_api_key.get_secret_value() or not self.config.ai_folder_id:
                     raise ProviderError("provider_not_configured")
                 async with httpx.AsyncClient(
-                    transport=self.transport, timeout=self.config.ai_timeout_seconds
+                    transport=self.transport, timeout=httpx.Timeout(budget, connect=min(5, budget))
                 ) as client:
                     response = await client.post(
                         self.config.ai_base_url.rstrip("/")
@@ -190,7 +198,11 @@ class YandexProvider:
                         usage, snapshot, kind == "embedding"
                     )
             if error:
-                if retry and attempt < self.config.ai_attempts:
+                if (
+                    retry
+                    and attempt < min(2, self.config.ai_attempts)
+                    and (operation.deadline_at - now()).total_seconds() > attempt
+                ):
                     await asyncio.sleep(attempt)
                     continue
                 raise ProviderError(error)

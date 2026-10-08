@@ -17,6 +17,14 @@ def install(sessions, provider=None, config=None):
     registry.callback = callback
     from app.data_controls import PrepareDataDeletion, cleanup_deletion
     from app.memory_overview import show_memory
+    from app.memory_resolution import PrepareMemoryResolution, prepare_job
+
+    registry.tools["prepare_memory_resolution"] = PrepareMemoryResolution()
+
+    async def resolution(job, lease):
+        await prepare_job(sessions, job, lease)
+
+    registry.jobs["memory_resolution"] = resolution
 
     registry.tools["prepare_data_deletion"] = PrepareDataDeletion(
         config.file_directory if config else None
