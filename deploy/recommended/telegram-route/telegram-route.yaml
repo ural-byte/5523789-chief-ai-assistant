@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: assistant
+spec:
+  template:
+    spec:
+      hostAliases:
+        - ip: '149.154.167.220'
+          hostnames:
+            - api.telegram.org

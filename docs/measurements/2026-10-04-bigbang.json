@@ -1,0 +1,1215 @@
+{
+  "status": "passed",
+  "error_code": null,
+  "measured_at": "2026-10-04T13:10:06.017848+00:00",
+  "revision": "181dbc5b378bcdd0cb48c9d33682860e2fc2ede2",
+  "protocol": "native",
+  "run_id": "0fc1bdcb-b1ea-48de-8178-07ba4ae278ae",
+  "operations": {
+    "task": "76defbc2-f182-4400-bd2c-653aadc35865",
+    "memory_save": "48d738b4-66ac-4be5-a29b-f1b1fe38e694",
+    "memory_search": "7159f88e-4809-46bd-b9ff-783991396c48",
+    "pdf_index": "b3197c0c-8e9d-44c4-91dd-35a5b13ff1b5",
+    "pdf_question": "ce215ba4-34fe-44f6-b348-7088934d37e2",
+    "approval": "1771108a-c1a7-4414-b80f-93565cd3cb25"
+  },
+  "scenarios": {
+    "Поручение": {
+      "calls": 2,
+      "models": [
+        "gpt://deepseek-v4.1-flash/latest"
+      ],
+      "providers": [
+        "yandex"
+      ],
+      "tokens": {
+        "input_tokens": {
+          "known": 3499,
+          "unknown_calls": 0
+        },
+        "output_tokens": {
+          "known": 372,
+          "unknown_calls": 0
+        },
+        "cached_tokens": {
+          "known": 512,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known": null,
+          "unknown_calls": 2
+        },
+        "embedding_tokens": {
+          "known": null,
+          "unknown_calls": 2
+        }
+      },
+      "costs": {
+        "RUB": {
+          "known": "1.1205000000",
+          "incomplete_calls": 0
+        }
+      },
+      "pricing_versions": [
+        "yandex-2026-10-04-v4.1"
+      ]
+    },
+    "Долговременная память": {
+      "calls": 6,
+      "models": [
+        "emb://<folder>/text-embeddings-v2-doc/latest",
+        "emb://<folder>/text-embeddings-v2-query/latest",
+        "gpt://deepseek-v4.1-flash/latest"
+      ],
+      "providers": [
+        "yandex"
+      ],
+      "tokens": {
+        "input_tokens": {
+          "known": 7285,
+          "unknown_calls": 2
+        },
+        "output_tokens": {
+          "known": 655,
+          "unknown_calls": 2
+        },
+        "cached_tokens": {
+          "known": 1024,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known": null,
+          "unknown_calls": 6
+        },
+        "embedding_tokens": {
+          "known": 86,
+          "unknown_calls": 4
+        }
+      },
+      "costs": {
+        "RUB": {
+          "known": "2.2834686000",
+          "incomplete_calls": 0
+        }
+      },
+      "pricing_versions": [
+        "yandex-2026-10-04-v4.1"
+      ]
+    },
+    "PDF: загрузка и индексация": {
+      "calls": 1,
+      "models": [
+        "emb://<folder>/text-embeddings-v2-doc/latest"
+      ],
+      "providers": [
+        "yandex"
+      ],
+      "tokens": {
+        "input_tokens": {
+          "known": null,
+          "unknown_calls": 1
+        },
+        "output_tokens": {
+          "known": null,
+          "unknown_calls": 1
+        },
+        "cached_tokens": {
+          "known": 0,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known": null,
+          "unknown_calls": 1
+        },
+        "embedding_tokens": {
+          "known": 21,
+          "unknown_calls": 0
+        }
+      },
+      "costs": {
+        "RUB": {
+          "known": "0.0002121000",
+          "incomplete_calls": 0
+        }
+      },
+      "pricing_versions": [
+        "yandex-2026-10-04-v4.1"
+      ]
+    },
+    "PDF: вопрос": {
+      "calls": 3,
+      "models": [
+        "emb://<folder>/text-embeddings-v2-query/latest",
+        "gpt://deepseek-v4.1-flash/latest"
+      ],
+      "providers": [
+        "yandex"
+      ],
+      "tokens": {
+        "input_tokens": {
+          "known": 3684,
+          "unknown_calls": 1
+        },
+        "output_tokens": {
+          "known": 220,
+          "unknown_calls": 1
+        },
+        "cached_tokens": {
+          "known": 512,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known": null,
+          "unknown_calls": 3
+        },
+        "embedding_tokens": {
+          "known": 11,
+          "unknown_calls": 2
+        }
+      },
+      "costs": {
+        "RUB": {
+          "known": "1.1001111000",
+          "incomplete_calls": 0
+        }
+      },
+      "pricing_versions": [
+        "yandex-2026-10-04-v4.1"
+      ]
+    },
+    "Подготовка approval": {
+      "calls": 2,
+      "models": [
+        "gpt://deepseek-v4.1-flash/latest"
+      ],
+      "providers": [
+        "yandex"
+      ],
+      "tokens": {
+        "input_tokens": {
+          "known": 3577,
+          "unknown_calls": 0
+        },
+        "output_tokens": {
+          "known": 1104,
+          "unknown_calls": 0
+        },
+        "cached_tokens": {
+          "known": 512,
+          "unknown_calls": 0
+        },
+        "tool_tokens": {
+          "known": null,
+          "unknown_calls": 2
+        },
+        "embedding_tokens": {
+          "known": null,
+          "unknown_calls": 2
+        }
+      },
+      "costs": {
+        "RUB": {
+          "known": "1.5099000000",
+          "incomplete_calls": 0
+        }
+      },
+      "pricing_versions": [
+        "yandex-2026-10-04-v4.1"
+      ]
+    }
+  },
+  "total": {
+    "calls": 14,
+    "models": [
+      "emb://<folder>/text-embeddings-v2-doc/latest",
+      "emb://<folder>/text-embeddings-v2-query/latest",
+      "gpt://deepseek-v4.1-flash/latest"
+    ],
+    "providers": [
+      "yandex"
+    ],
+    "tokens": {
+      "input_tokens": {
+        "known": 18045,
+        "unknown_calls": 4
+      },
+      "output_tokens": {
+        "known": 2351,
+        "unknown_calls": 4
+      },
+      "cached_tokens": {
+        "known": 2560,
+        "unknown_calls": 0
+      },
+      "tool_tokens": {
+        "known": null,
+        "unknown_calls": 14
+      },
+      "embedding_tokens": {
+        "known": 118,
+        "unknown_calls": 10
+      }
+    },
+    "costs": {
+      "RUB": {
+        "known": "6.0141918000",
+        "incomplete_calls": 0
+      }
+    },
+    "pricing_versions": [
+      "yandex-2026-10-04-v4.1"
+    ]
+  },
+  "events": [
+    {
+      "id": "f6165404-d163-47f0-9664-cb561cd368ee",
+      "operation_id": "76defbc2-f182-4400-bd2c-653aadc35865",
+      "logical_call_id": "697a7e8f-d2c5-478c-9412-ca07a0efb501",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "task_creation",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:33.827057+00:00",
+      "latency_ms": 1239,
+      "input_tokens": 638,
+      "output_tokens": 88,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 726,
+        "prompt_tokens": 638,
+        "completion_tokens": 88,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 0
+      },
+      "cost": "0.1778000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "7118a51f-e26c-45c5-8997-80002e60716d",
+      "operation_id": "76defbc2-f182-4400-bd2c-653aadc35865",
+      "logical_call_id": "2b45926f-eab4-4d16-9e77-4bfe3b62312b",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "task_creation",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:30.338247+00:00",
+      "latency_ms": 3299,
+      "input_tokens": 2861,
+      "output_tokens": 284,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 3145,
+        "prompt_tokens": 2861,
+        "completion_tokens": 284,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 159
+      },
+      "cost": "0.9427000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "29fa22f3-71f6-4f0f-9d5b-94b2aeeb64d4",
+      "operation_id": "48d738b4-66ac-4be5-a29b-f1b1fe38e694",
+      "logical_call_id": "1d549bb0-0db6-49ee-b69b-a4f74db5ed72",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "emb://<folder>/text-embeddings-v2-doc/latest",
+      "operation_type": "embedding",
+      "scenario": "memory",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:39.398989+00:00",
+      "latency_ms": 48,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cached_tokens": 0,
+      "tool_tokens": null,
+      "embedding_tokens": 46,
+      "extra_usage": {
+        "total_tokens": 46,
+        "prompt_tokens": 46,
+        "prompt_tokens_details.cached_tokens": 0
+      },
+      "cost": "0.0004646000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "embedding": "0.0101"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "b9987d11-0e0d-4909-ad93-37f72329a982",
+      "operation_id": "48d738b4-66ac-4be5-a29b-f1b1fe38e694",
+      "logical_call_id": "4c455e79-5643-4dc1-a505-14b42c5746db",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "memory",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:36.121027+00:00",
+      "latency_ms": 3254,
+      "input_tokens": 2853,
+      "output_tokens": 245,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 3098,
+        "prompt_tokens": 2853,
+        "completion_tokens": 245,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 110
+      },
+      "cost": "0.9208000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "e8f6ea00-3f7b-4035-b5dc-94784cb2be3a",
+      "operation_id": "48d738b4-66ac-4be5-a29b-f1b1fe38e694",
+      "logical_call_id": "93a8c510-e7d6-4c2f-8900-285bfcc41de8",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "memory",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:39.482447+00:00",
+      "latency_ms": 919,
+      "input_tokens": 633,
+      "output_tokens": 81,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 714,
+        "prompt_tokens": 633,
+        "completion_tokens": 81,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 0
+      },
+      "cost": "0.1728000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "40b24726-1c0d-4763-9b43-512d33c3c465",
+      "operation_id": "7159f88e-4809-46bd-b9ff-783991396c48",
+      "logical_call_id": "dd5f4a9b-8dee-43cd-96e8-1963cd9195b2",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "emb://<folder>/text-embeddings-v2-query/latest",
+      "operation_type": "embedding",
+      "scenario": "memory",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:43.252947+00:00",
+      "latency_ms": 174,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cached_tokens": 0,
+      "tool_tokens": null,
+      "embedding_tokens": 40,
+      "extra_usage": {
+        "total_tokens": 40,
+        "prompt_tokens": 40,
+        "prompt_tokens_details.cached_tokens": 0
+      },
+      "cost": "0.0004040000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "embedding": "0.0101"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "7972d1d4-bf17-48d4-a05a-ec9b9769e96a",
+      "operation_id": "7159f88e-4809-46bd-b9ff-783991396c48",
+      "logical_call_id": "e2de7b33-ee33-470a-aac1-f35bdab15a7f",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "memory",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:41.460090+00:00",
+      "latency_ms": 1669,
+      "input_tokens": 2858,
+      "output_tokens": 105,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 2963,
+        "prompt_tokens": 2858,
+        "completion_tokens": 105,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 39
+      },
+      "cost": "0.8523000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "aeafba91-d5c0-49aa-9aa9-ce90faacbe7d",
+      "operation_id": "7159f88e-4809-46bd-b9ff-783991396c48",
+      "logical_call_id": "97bc6794-d87a-4e0a-a3da-cea5234dea78",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "memory",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:43.549965+00:00",
+      "latency_ms": 2808,
+      "input_tokens": 941,
+      "output_tokens": 224,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 1165,
+        "prompt_tokens": 941,
+        "completion_tokens": 224,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 24
+      },
+      "cost": "0.3367000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "9610170f-d7b9-41fa-994f-e82290b0feb6",
+      "operation_id": "b3197c0c-8e9d-44c4-91dd-35a5b13ff1b5",
+      "logical_call_id": "0d10df52-0af9-45ae-828e-7abd8890c55b",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "emb://<folder>/text-embeddings-v2-doc/latest",
+      "operation_type": "embedding",
+      "scenario": "pdf_index",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:47.524726+00:00",
+      "latency_ms": 45,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cached_tokens": 0,
+      "tool_tokens": null,
+      "embedding_tokens": 21,
+      "extra_usage": {
+        "total_tokens": 21,
+        "prompt_tokens": 21,
+        "prompt_tokens_details.cached_tokens": 0
+      },
+      "cost": "0.0002121000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "embedding": "0.0101"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "a6d710b2-87f8-4ce2-bc2b-5726ec7a0518",
+      "operation_id": "ce215ba4-34fe-44f6-b348-7088934d37e2",
+      "logical_call_id": "595ce741-1e9b-46ae-8fd8-e3ac1b01d768",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "emb://<folder>/text-embeddings-v2-query/latest",
+      "operation_type": "embedding",
+      "scenario": "pdf_question",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:50.351560+00:00",
+      "latency_ms": 45,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cached_tokens": 0,
+      "tool_tokens": null,
+      "embedding_tokens": 11,
+      "extra_usage": {
+        "total_tokens": 11,
+        "prompt_tokens": 11,
+        "prompt_tokens_details.cached_tokens": 0
+      },
+      "cost": "0.0001111000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "embedding": "0.0101"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "281abf50-fe1e-458e-ad3f-e841a5db3cf9",
+      "operation_id": "ce215ba4-34fe-44f6-b348-7088934d37e2",
+      "logical_call_id": "8feff830-dc3e-4627-aaf5-fe52ffa39f70",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "pdf_question",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:48.624887+00:00",
+      "latency_ms": 1703,
+      "input_tokens": 2885,
+      "output_tokens": 147,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 3032,
+        "prompt_tokens": 2885,
+        "completion_tokens": 147,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 23
+      },
+      "cost": "0.8814000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "ba5c110e-2ab2-4db2-92de-ff472b92956c",
+      "operation_id": "ce215ba4-34fe-44f6-b348-7088934d37e2",
+      "logical_call_id": "b9bc4ab0-730d-48f2-a3f4-2da8a34e2147",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "pdf_question",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:50.425235+00:00",
+      "latency_ms": 1193,
+      "input_tokens": 799,
+      "output_tokens": 73,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 872,
+        "prompt_tokens": 799,
+        "completion_tokens": 73,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 22
+      },
+      "cost": "0.2186000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "e124bbbd-09b8-4445-9648-b4f6099bbbae",
+      "operation_id": "1771108a-c1a7-4414-b80f-93565cd3cb25",
+      "logical_call_id": "d2f4d03f-83f1-402f-bd8d-446bbd801b83",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "approval_preparation",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:09:52.666251+00:00",
+      "latency_ms": 7779,
+      "input_tokens": 2860,
+      "output_tokens": 769,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 3629,
+        "prompt_tokens": 2860,
+        "completion_tokens": 769,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 645
+      },
+      "cost": "1.1849000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    },
+    {
+      "id": "11a64aec-3c3c-4b7d-9cf1-1559c30d7234",
+      "operation_id": "1771108a-c1a7-4414-b80f-93565cd3cb25",
+      "logical_call_id": "97f96ce4-ceb1-4725-a0ee-b0846be4ae66",
+      "attempt": 1,
+      "provider": "yandex",
+      "model": "gpt://deepseek-v4.1-flash/latest",
+      "operation_type": "generation",
+      "scenario": "approval_preparation",
+      "status": "succeeded",
+      "error_code": null,
+      "started_at": "2026-10-04T13:10:00.853091+00:00",
+      "latency_ms": 4142,
+      "input_tokens": 717,
+      "output_tokens": 335,
+      "cached_tokens": 256,
+      "tool_tokens": null,
+      "embedding_tokens": null,
+      "extra_usage": {
+        "total_tokens": 1052,
+        "prompt_tokens": 717,
+        "completion_tokens": 335,
+        "prompt_tokens_details.cached_tokens": 256,
+        "completion_tokens_details.reasoning_tokens": 113
+      },
+      "cost": "0.3250000000",
+      "cost_complete": true,
+      "currency": "RUB",
+      "pricing_version": "yandex-2026-10-04-v4.1",
+      "pricing_snapshot": {
+        "date": "2026-10-04",
+        "unit": 1000,
+        "rates": {
+          "input": "0.3",
+          "cached": "0.075",
+          "output": "0.5"
+        },
+        "models": {
+          "deepseek-v4-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "deepseek-v4.1-flash": {
+            "input": "0.3",
+            "cached": "0.075",
+            "output": "0.5"
+          },
+          "text-embeddings-v2-doc/": {
+            "embedding": "0.0101"
+          },
+          "text-embeddings-v2-query/": {
+            "embedding": "0.0101"
+          }
+        },
+        "source": "https://aistudio.yandex.ru/ru/docs/ai-studio/pricing",
+        "aliases": {
+          "deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "deepseek-v4.1-flash/latest": "deepseek-v4.1-flash",
+          "text-embeddings-v2-doc/latest": "text-embeddings-v2-doc/",
+          "gpt://deepseek-v4-flash/latest": "deepseek-v4-flash",
+          "text-embeddings-v2-query/latest": "text-embeddings-v2-query/",
+          "gpt://deepseek-v4.1-flash/latest": "deepseek-v4.1-flash"
+        },
+        "version": "yandex-2026-10-04-v4.1",
+        "currency": "RUB",
+        "provider": "yandex"
+      }
+    }
+  ]
+}

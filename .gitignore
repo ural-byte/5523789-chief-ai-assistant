@@ -8,3 +8,10 @@ secrets/
 
 # Local operating system metadata
 .DS_Store
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+data/
