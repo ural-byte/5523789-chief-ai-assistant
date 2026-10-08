@@ -1,0 +1,37 @@
+{
+  "schema": "ux-pdf-feedback-v1",
+  "date": "2026-10-04T16:50:43.000555+00:00",
+  "executable_revision": "d39e998845b6e105f88e9dcd92827143ef4023b6",
+  "operation_id": "d0bde281-75eb-4dc9-939a-3cb225cec3c0",
+  "ingress_mode": "local fixture through service-auth ingress and file API; real Telegram and Yandex embeddings",
+  "latency": {
+    "operation_id": "d0bde281-75eb-4dc9-939a-3cb225cec3c0",
+    "scenario": "pdf_index",
+    "status": "done",
+    "source_message_at": "2026-10-04T16:50:33+00:00",
+    "received_at": "2026-10-04T16:50:33.936356+00:00",
+    "first_started_at": "2026-10-04T16:50:42.412621+00:00",
+    "processing_finished_at": "2026-10-04T16:50:42.705520+00:00",
+    "first_feedback_at": "2026-10-04T16:50:34.549505+00:00",
+    "final_delivery_ack_at": "2026-10-04T16:50:43.000555+00:00",
+    "source_to_ingress_ms": 936,
+    "queue_wait_ms": 8476,
+    "runtime_ms": 293,
+    "retrieval_ms": null,
+    "llm_tool_loop_ms": null,
+    "ai_ms": 106,
+    "ai_calls": 1,
+    "delivery_ms": 295,
+    "end_to_end_ms": 9064,
+    "source_to_ack_ms": 10001
+  },
+  "progress_count": 1,
+  "progress_acknowledged": true,
+  "progress_is_product_text": true,
+  "document_ready": true,
+  "final_delivery_complete": true,
+  "limitations": [
+    "Local fixture upload intentionally waits for progress acknowledgement before uploading file; this is a feedback integration check, not a PDF processing latency benchmark."
+  ],
+  "status": "passed"
+}

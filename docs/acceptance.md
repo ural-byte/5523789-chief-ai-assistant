@@ -49,3 +49,26 @@
 
 Future work: OCR, реальные календарь/почта, несколько пользователей, другие каналы,
 расширенный инструментарий. Они не входят в критерии текущего прототипа.
+
+## Продолжение приёмки: URALBYTE-8
+
+Первая часть клиентской приёмки выявила UX/безопасностные замечания. Они не блокируют
+инженерную готовность исходного MVP, но должны быть устранены до демонстрации заказчику.
+Отдельная [доработка URALBYTE-8](https://tracker.yandex.ru/URALBYTE-8) и её
+[согласованный план](followups/URALBYTE-8.md) проходят обычный инженерный цикл.
+Общий клиентский вердикт остаётся **PENDING**: приёмка продолжается.
+
+| Проверка доработки | Состояние |
+|---|---|
+| Быстрый typing и понятный progress без инфраструктурных подробностей | Checker source и live typing/PDF progress PASS |
+| Измерение latency до/после, queue/retrieval/AI/delivery | До/после собраны и независимо сверены с БД |
+| Очистка памяти, удаление документов, полный reset | Checker source PASS; настоящий reset ожидается |
+| Owner/TTL/immutable approval, атомарность, повторы и аудит удаления | Checker source PASS; Reviewer source APPROVE |
+| Файловые гонки, новые данные и восстановление после рестарта | Checker source PASS; Reviewer source APPROVE |
+| Продолжение клиентской приёмки после подтверждённого reset | Ожидается настоящий owner callback |
+
+Доработка опубликована в [PR2](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/2),
+обновлённый бот [доступен](https://t.me/UralbyteDemoBot). Source gates: 122 теста +
+14 независимых случаев PASS, Reviewer APPROVE; live latency/progress сверены с БД.
+[Фактическая поставка](deployment/bigbang-uralbyte8.md). PR не слит; настоящая очистка
+требует owner approval. Клиентская приёмка продолжается, вердикт не меняется.

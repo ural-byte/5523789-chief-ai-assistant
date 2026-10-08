@@ -8,8 +8,9 @@ import httpx
 from sqlalchemy import select
 
 from app.domain_memory import MAX_BYTES, Document
-from app.models import Job, Operation
-from app.queue import enqueue_text, require_lease
+from app.models import Operation
+from app.privacy import guard_operation
+from app.queue import enqueue_text
 
 
 async def download_document(sessions, config, job, lease):
@@ -18,7 +19,7 @@ async def download_document(sessions, config, job, lease):
 
     def fail(message):
         with sessions.begin() as session:
-            require_lease(session, Job, *lease)
+            guard_operation(session, job.operation_id, lease)
             op = session.get(Operation, job.operation_id)
             op.status = "error"
             enqueue_text(session, op, message)
@@ -61,7 +62,7 @@ async def download_document(sessions, config, job, lease):
                         return
                     handle.write(block)
             with sessions.begin() as session:
-                require_lease(session, Job, *lease)
+                guard_operation(session, job.operation_id, lease)
             handle.seek(0)
             uploaded = await client.post(
                 config.backend_url + f"/internal/operations/{job.operation_id}/file",

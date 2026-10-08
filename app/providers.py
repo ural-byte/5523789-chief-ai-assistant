@@ -10,9 +10,8 @@ import httpx
 from sqlalchemy import select
 
 from app.config import Settings
-from app.models import AICall, Job, Operation
+from app.models import AICall
 from app.pricing import Pricing, Usage, normalize_usage
-from app.queue import require_lease
 
 MAX_INPUT = 16000
 MAX_OUTPUT = 2000
@@ -107,9 +106,11 @@ class YandexProvider:
         for attempt in range(1, self.config.ai_attempts + 1):
             snapshot = self.pricing.snapshot(model)
             with self.sessions.begin() as session:
-                if lease:
-                    require_lease(session, Job, *lease)
-                operation = session.get(Operation, operation_id, with_for_update=True)
+                from app.privacy import guard_operation
+
+                operation = guard_operation(
+                    session, operation_id, lease, context=(kind == "generation")
+                )
                 if kind == "generation":
                     size = wire_bytes(payload)
                     if operation.input_spent + size > MAX_INPUT:

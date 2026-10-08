@@ -15,6 +15,21 @@ def install(sessions, provider=None, config=None):
         await handle_callback(sessions, job, lease)
 
     registry.callback = callback
+    from app.data_controls import PrepareDataDeletion, cleanup_deletion
+    from app.memory_overview import show_memory
+
+    registry.tools["prepare_data_deletion"] = PrepareDataDeletion(
+        config.file_directory if config else None
+    )
+
+    async def overview(job, lease):
+        await show_memory(sessions, job, lease)
+
+    async def cleanup(job, lease):
+        await cleanup_deletion(sessions, config, job, lease)
+
+    registry.jobs["memory_overview"] = overview
+    registry.jobs["data_cleanup"] = cleanup
     if provider is not None and config is not None:
         for name, handler in {
             "save_memory": SaveMemory(sessions, provider),

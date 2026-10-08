@@ -4,6 +4,7 @@ import sys
 from contextlib import suppress
 
 import httpx
+from sqlalchemy import select
 
 from app.bootstrap import install
 from app.config import settings
@@ -39,6 +40,37 @@ async def background_once(sessions, provider, config):
             await Runtime(sessions, provider, registry, config.tool_protocol).run(
                 job.operation_id, (job.id, token)
             )
+        elif job.kind == "data_prepare":
+            from app.data_controls import deletion_scope, prepare_deletion
+            from app.models import Invocation
+            from app.privacy import guard_operation
+
+            with sessions.begin() as session:
+                op = guard_operation(session, job.operation_id, (job.id, token))
+                inv = session.scalar(
+                    select(Invocation).where(
+                        Invocation.operation_id == op.id, Invocation.call_id == "data-command"
+                    )
+                )
+                if inv is None:
+                    inv = Invocation(
+                        operation_id=op.id,
+                        call_id="data-command",
+                        name="prepare_data_deletion",
+                        arguments={},
+                    )
+                    session.add(inv)
+                    session.flush()
+                result = prepare_deletion(
+                    session,
+                    op,
+                    inv.id,
+                    deletion_scope(job.payload.get("message", {}).get("text", "")),
+                    config.file_directory,
+                )
+                inv.result = result.model_dump()
+                op.status = "done"
+                enqueue_text(session, op, result.user_message, result.buttons)
         elif job.kind == "callback" and registry.callback:
             await registry.callback(job, (job.id, token))
         elif job.kind in registry.jobs:
@@ -53,8 +85,23 @@ async def background_once(sessions, provider, config):
                 enqueue_text(session, op, "Этот сценарий ещё недоступен в текущей версии.")
         with sessions.begin() as session:
             acknowledge(session, Job, job.id, token)
+            from app.latency import finish_operation
+
+            finish_operation(session, session.get(Operation, job.operation_id))
     except LeaseLost:
         log.warning("lease_lost job=%s", job.id)
+        with sessions.begin() as session:
+            from app.privacy import owner_lock
+
+            op = session.get(Operation, job.operation_id)
+            owner_lock(session, op.owner_id)
+            row = session.get(Job, job.id, with_for_update=True)
+            if row.status == "running" and row.lease_token == token:
+                row.status, row.lease_token, row.lease_until = "cancelled", None, None
+                op.status = "cancelled"
+                from app.latency import finish_operation
+
+                finish_operation(session, op)
     except Exception as exc:
         # Exception messages may contain provider requests or credentials; log only the class.
         log.error("job_failed job=%s code=%s", job.id, type(exc).__name__)
@@ -92,67 +139,139 @@ async def agent_loop(sessions, provider, config):
             await asyncio.sleep(5)
 
 
+async def transport_loop(name, action, interval):
+    import random
+
+    failures = 0
+    while True:
+        try:
+            await action()
+            failures = 0
+            if interval:
+                await asyncio.sleep(interval)
+        except Exception as exc:
+            failures += 1
+            log.error("telegram_%s_failed code=%s", name, type(exc).__name__)
+            await asyncio.sleep(min(5, 2 ** min(failures - 1, 3) + random.uniform(0, 0.2)))
+
+
+async def poll_once(backend, bot):
+    checkpoint = await backend.get("/internal/checkpoint")
+    checkpoint.raise_for_status()
+    response = await bot.post(
+        "getUpdates",
+        json={
+            "offset": checkpoint.json()["value"],
+            "timeout": 25,
+            "allowed_updates": ["message", "callback_query"],
+        },
+        timeout=httpx.Timeout(35, connect=5),
+    )
+    response.raise_for_status()
+    updates = response.json()
+    if not updates.get("ok"):
+        raise RuntimeError("telegram_get_updates")
+    for update in updates["result"]:
+        accepted = await backend.post("/internal/updates", json=update)
+        accepted.raise_for_status()
+        committed = await backend.post(
+            "/internal/checkpoint", json={"value": update["update_id"] + 1}
+        )
+        committed.raise_for_status()
+
+
+async def deliver_once(backend, bot):
+    import time
+
+    claimed = await backend.post("/internal/outbox/claim")
+    claimed.raise_for_status()
+    item = claimed.json()
+    if not item:
+        return
+    # A revoked lease may have been cancelled after claim. Check immediately
+    # before network IO; after an accepted external send its duplicate semantics
+    # remain the documented Telegram at-least-once boundary.
+    renewed = await backend.post(
+        f"/internal/outbox/{item['id']}/renew", json={"lease_token": item["lease_token"]}
+    )
+    if renewed.status_code == 409:
+        return
+    renewed.raise_for_status()
+    error, started = None, time.monotonic()
+    try:
+        sent = await bot.post(item["kind"], json=item["payload"])
+        sent.raise_for_status()
+        if not sent.json().get("ok"):
+            error = "telegram_rejected"
+    except (httpx.HTTPError, ValueError):
+        error = "telegram_send_failed"
+    ack = await backend.post(
+        f"/internal/outbox/{item['id']}/ack",
+        json={
+            "lease_token": item["lease_token"],
+            "error": error,
+            "send_latency_ms": round((time.monotonic() - started) * 1000),
+        },
+    )
+    if ack.status_code != 409:
+        ack.raise_for_status()
+
+
+async def activity_once(backend, bot):
+    response = await backend.post("/internal/activity/claim")
+    response.raise_for_status()
+
+    async def typing(item):
+        try:
+            sent = await bot.post(
+                "sendChatAction",
+                json={"chat_id": item["chat_id"], "action": "typing"},
+                timeout=httpx.Timeout(3.5, connect=3),
+            )
+            sent.raise_for_status()
+            if sent.json().get("ok"):
+                ack = await backend.post(f"/internal/activity/{item['operation_id']}/ack")
+                ack.raise_for_status()
+        except (httpx.HTTPError, ValueError):
+            log.warning("telegram_activity_failed operation=%s", item["operation_id"])
+
+    await asyncio.gather(*(typing(item) for item in response.json()))
+
+
 async def telegram():
     config = settings()
     headers = {"Authorization": "Bearer " + config.service_token.get_secret_value()}
-    # Disable httpx logging: Bot API tokens form part of its URL.
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     async with httpx.AsyncClient(
-        timeout=40, headers=headers, base_url=config.backend_url
+        timeout=httpx.Timeout(10, connect=5), headers=headers, base_url=config.backend_url
     ) as backend:
-        while True:
-            try:
-                beat = await backend.post("/internal/heartbeat/telegram")
-                beat.raise_for_status()
-                if not config.telegram_bot_token.get_secret_value():
-                    await asyncio.sleep(5)
-                    continue
-                checkpoint = await backend.get("/internal/checkpoint")
-                checkpoint.raise_for_status()
-                offset = checkpoint.json()["value"]
-                url = "https://api.telegram.org/bot" + config.telegram_bot_token.get_secret_value()
-                async with httpx.AsyncClient(timeout=35) as bot:
-                    response = await bot.post(
-                        url + "/getUpdates",
-                        json={
-                            "offset": offset,
-                            "timeout": 3,
-                            "allowed_updates": ["message", "callback_query"],
-                        },
-                    )
-                    response.raise_for_status()
-                    updates = response.json()
-                    if not updates.get("ok"):
-                        raise RuntimeError("telegram_get_updates")
-                    for update in updates["result"]:
-                        accepted = await backend.post("/internal/updates", json=update)
-                        accepted.raise_for_status()
-                        committed = await backend.post(
-                            "/internal/checkpoint", json={"value": update["update_id"] + 1}
-                        )
-                        committed.raise_for_status()
-                    for _ in range(20):
-                        claimed = await backend.post("/internal/outbox/claim")
-                        claimed.raise_for_status()
-                        item = claimed.json()
-                        if not item:
-                            break
-                        error = None
-                        try:
-                            sent = await bot.post(url + "/" + item["kind"], json=item["payload"])
-                            sent.raise_for_status()
-                            if not sent.json().get("ok"):
-                                error = "telegram_rejected"
-                        except (httpx.HTTPError, ValueError):
-                            error = "telegram_send_failed"
-                        ack = await backend.post(
-                            f"/internal/outbox/{item['id']}/ack",
-                            json={"lease_token": item["lease_token"], "error": error},
-                        )
-                        ack.raise_for_status()
-            except Exception as exc:
-                log.error("telegram_failed code=%s", type(exc).__name__)
-                await asyncio.sleep(5)
+
+        async def beat():
+            response = await backend.post("/internal/heartbeat/telegram")
+            response.raise_for_status()
+
+        if not config.telegram_bot_token.get_secret_value():
+            await transport_loop("heartbeat", beat, 5)
+            return
+        url = "https://api.telegram.org/bot" + config.telegram_bot_token.get_secret_value() + "/"
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10, connect=5), base_url=url) as bot:
+
+            async def poll():
+                await poll_once(backend, bot)
+
+            async def deliver():
+                await deliver_once(backend, bot)
+
+            async def activity():
+                await activity_once(backend, bot)
+
+            await asyncio.gather(
+                transport_loop("poll", poll, 0),
+                transport_loop("delivery", deliver, 0.25),
+                transport_loop("activity", activity, 0.25),
+                transport_loop("heartbeat", beat, 5),
+            )
 
 
 def main():
