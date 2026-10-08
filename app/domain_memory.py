@@ -527,9 +527,7 @@ class SearchDocument:
             return ToolResult(
                 status="needs_clarification",
                 presentation="canonical",
-                user_message=(
-                    "Укажите имя PDF:\n" + "\n".join(d.name for d in docs)
-                )
+                user_message=("Укажите имя PDF:\n" + "\n".join(d.name for d in docs))
                 if docs
                 else "Загрузите текстовый PDF.",
                 data={
