@@ -75,6 +75,7 @@ class MemoryContext(Base):
     chat_id: Mapped[int] = mapped_column(BigInteger)
     context_epoch: Mapped[int] = mapped_column(Integer)
     entries: Mapped[dict] = mapped_column(JSONB)
+    shown_conflicts: Mapped[dict | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 

@@ -253,8 +253,22 @@ async def handle_callback(sessions, job, lease):
             if approval_id
             else None
         )
-        if row and row.action_kind not in {"meeting", "data_deletion", "memory_resolution"}:
+        if row and row.action_kind not in {
+            "meeting",
+            "data_deletion",
+            "memory_resolution",
+            "memory_resolution_shown",
+        }:
             row = None
+        if row and row.action_kind in {"memory_resolution", "memory_resolution_shown"}:
+            if type(row.payload.get("schema")) is not int or (
+                row.action_kind,
+                row.payload.get("schema"),
+            ) not in {
+                ("memory_resolution", 1),
+                ("memory_resolution_shown", 2),
+            }:
+                row = None
         if row:
             if row.status == "pending" and row.expires_at <= now():
                 row.status = "expired"
@@ -266,7 +280,7 @@ async def handle_callback(sessions, job, lease):
                         if row.action_kind != "meeting"
                         else "Встреча отменена."
                     )
-                elif row.action_kind == "memory_resolution":
+                elif row.action_kind in {"memory_resolution", "memory_resolution_shown"}:
                     from app.memory_resolution import execute_resolution
 
                     message = (
@@ -301,7 +315,10 @@ async def handle_callback(sessions, job, lease):
                     "executing": "Удаление продолжается. Сообщу, когда оно завершится.",
                     "executed": "Данные уже удалены. Повторное удаление не выполняется.",
                 }.get(row.status, message)
+        from app.memory_output import validate_memory_output
         from app.models import ApprovalAudit
+
+        validate_memory_output(message)
 
         if not session.get(ApprovalAudit, str(query["id"])):
             session.add(

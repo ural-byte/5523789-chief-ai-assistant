@@ -1,0 +1,289 @@
+{
+  "known_expression_checks": {
+    "diminutive_person_name_recognized": {
+      "Лёша": false,
+      "Саша": false
+    },
+    "exact_selector_recognized": false,
+    "semantic_selection_gate_allows_short_name": true
+  },
+  "operations": [
+    {
+      "ai_calls": [
+        {
+          "error": null,
+          "latency_ms": 2912,
+          "status": "succeeded",
+          "type": "generation"
+        },
+        {
+          "error": null,
+          "latency_ms": 179,
+          "status": "succeeded",
+          "type": "embedding"
+        },
+        {
+          "error": null,
+          "latency_ms": 2657,
+          "status": "succeeded",
+          "type": "generation"
+        }
+      ],
+      "approvals": [],
+      "contexts": [
+        {
+          "entry_count": 3,
+          "epoch": 3
+        }
+      ],
+      "delivery_state": "delivered",
+      "error_reason": null,
+      "final_delivery_ack_at": "2026-10-05 10:05:38.978104+00:00",
+      "finals": [
+        {
+          "ack": true,
+          "attempts": 1,
+          "contains_diagnostic_block": true,
+          "contains_uuid": true,
+          "has_buttons": false,
+          "mentions_replaced_name": true,
+          "mentions_retained_name": true,
+          "nonblank": true,
+          "status": "done"
+        }
+      ],
+      "first_started_at": "2026-10-05 10:05:32.166189+00:00",
+      "genuine_update": true,
+      "id": "17601bfe-b48a-40e0-8d1a-597a23177300",
+      "input_spent": 15662,
+      "looks_like_selection": true,
+      "matches_reported_selection": true,
+      "processing_finished_at": "2026-10-05 10:05:38.607570+00:00",
+      "received_at": "2026-10-05 10:05:31.922779+00:00",
+      "scenario": "memory",
+      "status": "done",
+      "tools": [
+        {
+          "conflict_groups": 1,
+          "name": "search_memory",
+          "presentation": "model",
+          "provided_context_id": false,
+          "result_present": true,
+          "result_status": "ok",
+          "selector_mentions_retained_name": false
+        }
+      ]
+    },
+    {
+      "ai_calls": [
+        {
+          "error": null,
+          "latency_ms": 1396,
+          "status": "succeeded",
+          "type": "generation"
+        },
+        {
+          "error": null,
+          "latency_ms": 43,
+          "status": "succeeded",
+          "type": "embedding"
+        },
+        {
+          "error": null,
+          "latency_ms": 3081,
+          "status": "succeeded",
+          "type": "generation"
+        }
+      ],
+      "approvals": [],
+      "contexts": [
+        {
+          "entry_count": 3,
+          "epoch": 3
+        }
+      ],
+      "delivery_state": "delivered",
+      "error_reason": null,
+      "final_delivery_ack_at": "2026-10-05 10:04:44.646761+00:00",
+      "finals": [
+        {
+          "ack": true,
+          "attempts": 1,
+          "contains_diagnostic_block": true,
+          "contains_uuid": true,
+          "has_buttons": false,
+          "mentions_replaced_name": true,
+          "mentions_retained_name": true,
+          "nonblank": true,
+          "status": "done"
+        }
+      ],
+      "first_started_at": "2026-10-05 10:04:39.249077+00:00",
+      "genuine_update": true,
+      "id": "950f55ab-879e-44a3-9f83-db56604bd797",
+      "input_spent": 15460,
+      "looks_like_selection": false,
+      "matches_reported_selection": false,
+      "processing_finished_at": "2026-10-05 10:04:44.253910+00:00",
+      "received_at": "2026-10-05 10:04:38.688667+00:00",
+      "scenario": "memory",
+      "status": "done",
+      "tools": [
+        {
+          "conflict_groups": 1,
+          "name": "search_memory",
+          "presentation": "model",
+          "provided_context_id": false,
+          "result_present": true,
+          "result_status": "ok",
+          "selector_mentions_retained_name": false
+        }
+      ]
+    },
+    {
+      "ai_calls": [
+        {
+          "error": null,
+          "latency_ms": 1430,
+          "status": "succeeded",
+          "type": "generation"
+        },
+        {
+          "error": null,
+          "latency_ms": 64,
+          "status": "succeeded",
+          "type": "embedding"
+        },
+        {
+          "error": null,
+          "latency_ms": 434,
+          "status": "succeeded",
+          "type": "generation"
+        }
+      ],
+      "approvals": [],
+      "contexts": [],
+      "delivery_state": "delivered",
+      "error_reason": null,
+      "final_delivery_ack_at": "2026-10-05 10:04:27.371945+00:00",
+      "finals": [
+        {
+          "ack": true,
+          "attempts": 1,
+          "contains_diagnostic_block": false,
+          "contains_uuid": false,
+          "has_buttons": false,
+          "mentions_replaced_name": true,
+          "mentions_retained_name": false,
+          "nonblank": true,
+          "status": "done"
+        }
+      ],
+      "first_started_at": "2026-10-05 10:04:24.857492+00:00",
+      "genuine_update": true,
+      "id": "164a080d-e4ae-4997-aa5c-70bb08dc1bfa",
+      "input_spent": 13461,
+      "looks_like_selection": false,
+      "matches_reported_selection": false,
+      "processing_finished_at": "2026-10-05 10:04:26.982586+00:00",
+      "received_at": "2026-10-05 10:04:24.424832+00:00",
+      "scenario": "memory",
+      "status": "done",
+      "tools": [
+        {
+          "conflict_groups": 0,
+          "name": "save_memory",
+          "presentation": "model",
+          "provided_context_id": false,
+          "result_present": true,
+          "result_status": "ok",
+          "selector_mentions_retained_name": false
+        }
+      ]
+    },
+    {
+      "ai_calls": [
+        {
+          "error": null,
+          "latency_ms": 2872,
+          "status": "succeeded",
+          "type": "generation"
+        },
+        {
+          "error": null,
+          "latency_ms": 47,
+          "status": "succeeded",
+          "type": "embedding"
+        },
+        {
+          "error": null,
+          "latency_ms": 424,
+          "status": "succeeded",
+          "type": "generation"
+        }
+      ],
+      "approvals": [],
+      "contexts": [],
+      "delivery_state": "delivered",
+      "error_reason": null,
+      "final_delivery_ack_at": "2026-10-05 09:31:17.235754+00:00",
+      "finals": [
+        {
+          "ack": true,
+          "attempts": 1,
+          "contains_diagnostic_block": false,
+          "contains_uuid": false,
+          "has_buttons": false,
+          "mentions_replaced_name": false,
+          "mentions_retained_name": true,
+          "nonblank": true,
+          "status": "done"
+        }
+      ],
+      "first_started_at": "2026-10-05 09:31:13.287225+00:00",
+      "genuine_update": true,
+      "id": "096cd9e0-c14c-4139-a6aa-29eadb1c46f5",
+      "input_spent": 13465,
+      "looks_like_selection": false,
+      "matches_reported_selection": false,
+      "processing_finished_at": "2026-10-05 09:31:16.855093+00:00",
+      "received_at": "2026-10-05 09:31:12.633038+00:00",
+      "scenario": "memory",
+      "status": "done",
+      "tools": [
+        {
+          "conflict_groups": 0,
+          "name": "save_memory",
+          "presentation": "model",
+          "provided_context_id": false,
+          "result_present": true,
+          "result_status": "ok",
+          "selector_mentions_retained_name": false
+        }
+      ]
+    }
+  ],
+  "private_text_included": false,
+  "sampled_at": "2026-10-05T10:12:10.717062+00:00",
+  "schema": "0005",
+  "sierra_memory": [
+    {
+      "embedding_dimensions": 256,
+      "facts": 1,
+      "mentions_replaced_name": false,
+      "mentions_retained_name": true
+    },
+    {
+      "embedding_dimensions": 256,
+      "facts": 1,
+      "mentions_replaced_name": true,
+      "mentions_retained_name": false
+    }
+  ],
+  "source_hashes": {
+    "domain_memory": "dd8045e7a5ff18b1b0eb5defb5506727882d518e3e596b016ec975e623e7764e",
+    "memory_resolution": "11645bb39082612a3b9b650be051c8160aa7b04395229010e961f4e5e65184b4",
+    "privacy": "e8048bd065c825c2607bdd925d611f6304f884f392771d48005a97665b08f249",
+    "runtime": "da4da8c462b9633181d0c6372470eebb66e77c4318e65481b0a936bd00409b35"
+  }
+}
