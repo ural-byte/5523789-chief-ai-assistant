@@ -196,7 +196,7 @@ async def test_scheduler_runs_while_agent_waits_for_network(sessions):
         await asyncio.gather(waiting, scheduler, return_exceptions=True)
 
 
-async def test_update_runtime_creates_one_task_and_canonical_reply_despite_llm_failure(
+async def test_update_runtime_creates_one_task_without_redundant_final_generation(
     sessions, monkeypatch
 ):
     import json
@@ -256,6 +256,7 @@ async def test_update_runtime_creates_one_task_and_canonical_reply_despite_llm_f
                                         "arguments": json.dumps(
                                             {
                                                 "text": "Позвонить Иванову",
+                                                "complete_request": True,
                                                 "date": {
                                                     "kind": "relative",
                                                     "source_phrase": "через два часа",
@@ -284,8 +285,8 @@ async def test_update_runtime_creates_one_task_and_canonical_reply_despite_llm_f
         rows = session.scalars(select(Task)).all()
         assert len(rows) == 1 and rows[0].deadline == REFERENCE + timedelta(hours=2)
         messages = [row.payload["text"] for row in session.scalars(select(Outbox)).all()]
-        assert any("Поручение создано" in item for item in messages)
-        assert any("Не удалось" in item for item in messages)
+        assert len(messages) == 1 and "Поручение создано" in messages[0]
+        assert len(requests) == 1
 
 
 def test_model_cannot_omit_vague_time_or_change_literal_values():

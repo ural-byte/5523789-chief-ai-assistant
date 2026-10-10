@@ -521,15 +521,13 @@ class SearchDocument:
                 statement = statement.where(Document.id == args.document_id)
             elif args.document_name:
                 statement = statement.where(Document.name == args.document_name)
-            docs = session.scalars(statement).all()
+            docs = session.scalars(statement.order_by(Document.name, Document.id)).all()
         record_retrieval(self.sessions, ctx, started)
         if len(docs) != 1:
             return ToolResult(
                 status="needs_clarification",
                 presentation="canonical",
-                user_message=(
-                    "Укажите PDF по имени или ID:\n" + "\n".join(f"{d.name} — {d.id}" for d in docs)
-                )
+                user_message=("Укажите имя PDF:\n" + "\n".join(d.name for d in docs))
                 if docs
                 else "Загрузите текстовый PDF.",
                 data={

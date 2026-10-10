@@ -942,6 +942,23 @@ def prepare_shown_resolution(session, op, invocation_id, args):
         if existing.status != "pending" or not preview:
             return clarification()
         return approval_result(existing, preview.text)
+    # The owner lock serializes duplicate/replayed choices across different operations.
+    recorded = session.scalar(
+        select(Approval)
+        .where(
+            Approval.owner_id == op.owner_id,
+            Approval.chat_id == op.chat_id,
+            Approval.status == "pending",
+            Approval.action_kind == "memory_resolution_shown",
+            Approval.payload["conflict_ref"].astext == args.conflict_ref,
+        )
+        .order_by(Approval.id)
+        .limit(1)
+    )
+    if recorded:
+        preview = session.get(ApprovalPreview, recorded.id)
+        if preview:
+            return approval_result(recorded, preview.text)
     context = latest_shown_context(session, op)
     if not context:
         return clarification()
@@ -954,6 +971,176 @@ def prepare_shown_resolution(session, op, invocation_id, args):
     retain = session.get(MemoryEntry, uuid.UUID(pair[args.retain_ref]))
     old = session.get(MemoryEntry, uuid.UUID(pair["b" if args.retain_ref == "a" else "a"]))
     return create_resolution(session, op, invocation_id, context, old, retain, pair)
+
+
+def choice_label(source):
+    """Recognize a complete choice sentence, once, against delivered structured variants."""
+    match = re.fullmatch(
+        r"\s*([^.!?\n]{1,200}?)\s*[-—–:]\s*"
+        r"(?:правильный|верный|актуальный)\s+вариант[.!]?\s*",
+        source,
+        re.I,
+    )
+    return normalized(match.group(1)) if match else None
+
+
+def resolution_state(row):
+    # The immutable approval payload is the durable choice; the approval row owns its lifecycle.
+    return {
+        "choice_recorded": True,
+        "state": ("expired" if row.expires_at <= now() else "awaiting_approval")
+        if row.status == "pending"
+        else row.status,
+        "approval_id": str(row.id),
+        "keep_entry_id": row.payload["retain_entry_id"],
+        "delete_entry_id": row.payload["old_entry_id"],
+        "memory_changed": row.status == "executed",
+    }
+
+
+def continue_resolution_turn(session, op):
+    update = session.get(Update, op.update_id) if op.update_id is not None else None
+    source = update.payload.get("message", {}).get("text", "") if update else ""
+    label = choice_label(source)
+    confirm = normalized(source).rstrip(".! ") in {
+        "да",
+        "удалить",
+        "да, удалить",
+        "подтверждаю",
+        "подтвердить",
+        "confirm",
+        "a",
+        "а",
+    }
+    if not label and not confirm:
+        return None
+    # A later search/history truncation must never replace an already recorded choice.
+    cards = session.scalars(
+        select(Approval)
+        .where(
+            Approval.owner_id == op.owner_id,
+            Approval.chat_id == op.chat_id,
+            Approval.status == "pending",
+            Approval.action_kind.in_({"memory_resolution_shown", "memory_resolution"}),
+        )
+        .order_by(Approval.expires_at, Approval.id)
+    ).all()
+    if cards:
+        replies = []
+        for card in cards:
+            preview = session.get(ApprovalPreview, card.id)
+            if card.expires_at <= now() or not preview:
+                return ToolResult(
+                    status="ok",
+                    presentation="canonical",
+                    data=resolution_state(card),
+                    user_message="Выбор версии сохранён, но карточка подтверждения недоступна. "
+                    "Проверьте записи заново перед удалением.",
+                )
+            payload = card.payload
+            if payload.get("hash") != digest(
+                {k: v for k, v in payload.items() if k != "hash"}
+            ) or digest(preview.text) != payload.get("preview_hash"):
+                raise ValueError("invalid_resolution_snapshot")
+            replies.append(approval_result(card, preview.text))
+        if len(replies) == 1:
+            return replies[0]
+        # No text confirmation guesses which of several concrete approvals to execute.
+        return ToolResult(
+            status="ok",
+            presentation="canonical",
+            user_message="Есть несколько карточек. Подтвердите нужное действие кнопкой.\n\n"
+            + "\n\n".join(f"{i}. {reply.user_message}" for i, reply in enumerate(replies, 1)),
+            buttons=[
+                [{**button, "text": f"{button['text']} {i}"} for button in reply.buttons[0]]
+                for i, reply in enumerate(replies, 1)
+            ],
+        )
+    if confirm:
+        previous = session.scalar(
+            select(Approval)
+            .join(Operation, Approval.operation_id == Operation.id)
+            .where(
+                Approval.owner_id == op.owner_id,
+                Approval.chat_id == op.chat_id,
+                Approval.action_kind.in_({"memory_resolution_shown", "memory_resolution"}),
+            )
+            .order_by(Operation.received_at.desc(), Approval.id.desc())
+            .limit(1)
+        )
+        if (
+            previous
+            and previous.payload.get("retain_entry_id")
+            and previous.payload.get("old_entry_id")
+        ):
+            text = {
+                "executed": "Эта карточка уже подтверждена. Повторное удаление не выполняется.",
+                "cancelled": "Карточка отменена. Удаление по ней не выполнено.",
+                "expired": (
+                    "Срок подтверждения истёк. Выбор сохранён; проверьте записи перед удалением."
+                ),
+                "stale": "Выбор сохранён, но записи изменились. Проверьте память перед удалением.",
+            }.get(previous.status)
+            if text:
+                return ToolResult(
+                    status="ok",
+                    presentation="canonical",
+                    data=resolution_state(previous),
+                    user_message=text,
+                )
+        return None
+    context = latest_shown_context(session, op)
+    if not context:
+        return None
+    matches = []
+    for pair in context.shown_conflicts["pairs"]:
+        for key in ("a", "b"):
+            entry = session.get(MemoryEntry, uuid.UUID(pair[key]))
+            other = session.get(MemoryEntry, uuid.UUID(pair["b" if key == "a" else "a"]))
+            labels = {normalized(entry.original)}
+            # Use differing stored fact values/subjects, never infer a person's identity via LLM.
+            mine = session.execute(
+                select(Fact, Entity)
+                .join(Entity, Fact.entity_id == Entity.id)
+                .where(Fact.entry_id == entry.id)
+            ).all()
+            theirs = session.execute(
+                select(Fact, Entity)
+                .join(Entity, Fact.entity_id == Entity.id)
+                .where(Fact.entry_id == other.id)
+            ).all()
+            other_labels = {
+                normalized(value) for fact, entity in theirs for value in (fact.value, entity.name)
+            }
+            labels.update(
+                normalized(value)
+                for fact, entity in mine
+                for value in (fact.value, entity.name)
+                if normalized(value) not in other_labels
+            )
+            if label in labels:
+                matches.append((pair, key))
+    if len(matches) != 1:
+        return None
+    pair, retain_ref = matches[0]
+    inv = session.scalar(
+        select(Invocation).where(
+            Invocation.operation_id == op.id, Invocation.call_id == "resolution-choice"
+        )
+    )
+    if inv is None:
+        inv = Invocation(
+            operation_id=op.id,
+            call_id="resolution-choice",
+            name="prepare_memory_resolution",
+            arguments={"conflict_ref": pair["conflict_ref"], "retain_ref": retain_ref},
+        )
+        session.add(inv)
+        session.flush()
+    result = prepare_shown_resolution(session, op, inv.id, ShownResolutionArgs(**inv.arguments))
+    inv.result = result.model_dump()
+    inv.model_result = {"status": result.status, "data": result.data}
+    return result
 
 
 def clarification():
@@ -1041,6 +1228,10 @@ def create_resolution(session, op, invocation_id, context, old, retain, pair=Non
     if pair:
         payload["shown"] = context.shown_conflicts
         payload["conflict_ref"] = pair["conflict_ref"]
+        payload["choice_recorded"] = {
+            "keep_entry_id": str(retain.id),
+            "delete_entry_id": str(old.id),
+        }
     payload["hash"] = digest(payload)
     approval = Approval(
         invocation_id=invocation_id,
@@ -1061,7 +1252,7 @@ def approval_result(row, preview):
     return ToolResult(
         status="ok",
         presentation="canonical",
-        data={"approval_id": str(row.id)},
+        data=resolution_state(row),
         user_message=preview,
         buttons=[
             [
@@ -1075,7 +1266,7 @@ def approval_result(row, preview):
 class PrepareMemoryResolution:
     arguments = ShownResolutionArgs
     description = (
-        "Выбрать актуальную показанную версию; только ясный выбор И просьба удалить другую. "
+        "Зафиксировать ясный выбор актуальной показанной версии и подготовить удаление другой. "
         "Удаление — кнопкой."
     )
 
