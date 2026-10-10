@@ -42,7 +42,6 @@ from app.memory_resolution import (
     prepare_shown_resolution,
 )
 from app.models import (
-    AICall,
     ApprovalAudit,
     ApprovalPreview,
     History,
@@ -296,7 +295,7 @@ async def test_direct_semantic_reference_exact_pair_restart_cancel(sessions, mon
         select_direction("Лёша"),
         "Подтвердите или отмените удаление старой версии в карточке.",
     )
-    assert len(requests) == 2
+    assert len(requests) == 1
     first = requests[0]
     schemas = (
         first["tools"]
@@ -577,7 +576,8 @@ async def test_unsafe_model_output_never_visible(sessions, monkeypatch, phase):
     await run(sessions, op_id, call=calls[phase], final=text_value)
     with sessions() as session:
         op = session.get(Operation, op_id)
-        assert op.status == "error" and op.error_reason == "invalid_final"
+        assert op.status == ("done" if phase == "card" else "error")
+        assert op.error_reason == (None if phase == "card" else "invalid_final")
         finals = [
             h.message.get("content", "")
             for h in session.scalars(select(History).where(History.operation_id == op_id))
@@ -593,7 +593,8 @@ async def test_card_contradiction_rejected(sessions, monkeypatch):
     op_id = ingress(sessions, monkeypatch, SELECTION_SOURCE)
     await run(sessions, op_id, call=select_direction("Лёша"), final="Я уже удалил Сашу.")
     with sessions() as session:
-        assert session.get(Operation, op_id).error_reason == "invalid_final"
+        assert session.get(Operation, op_id).status == "done"
+        assert session.get(Operation, op_id).error_reason is None
         assert session.scalar(select(Approval)).status == "pending"
         assert len(session.scalars(select(MemoryEntry)).all()) == 3
     assert "Я уже удалил" not in visible(sessions, op_id)
@@ -795,7 +796,7 @@ async def test_long_history_keeps_full_shown_pair_all_tools_and_budget(
     requests = await run(
         sessions, op_id, protocol, select_direction("Лёша"), "Подтвердите удаление старой версии."
     )
-    assert len(requests) == 2 and sum(wire_bytes(p) for p in requests) <= 16000
+    assert len(requests) == 1 and sum(wire_bytes(p) for p in requests) <= 16000
     schemas = (
         requests[0]["tools"]
         if protocol == "native"
@@ -877,7 +878,7 @@ async def test_legacy_pending_invocation_resumes_schema1_without_rewriting_card(
         )
         session.add(inv)
     requests = await run(sessions, op_id, protocol, final="Подтвердите действие.")
-    assert len(requests) == 1
+    assert len(requests) == 0
     with sessions() as session:
         row = session.scalar(select(Approval).where(Approval.operation_id == op_id))
         assert row.action_kind == "memory_resolution" and row.payload["schema"] == 1
@@ -1055,22 +1056,18 @@ async def test_model_person_role_unit_save_question_selection_full_originals(
         select_direction(names[0]),
         "Удаление ещё не выполнено. Подтвердите или отмените действие кнопкой.",
     )
-    assert len(requests) == 2 and sum(wire_bytes(p) for p in requests) <= 16000
+    assert len(requests) == 1 and sum(wire_bytes(p) for p in requests) <= 16000
     schemas = (
         requests[0]["tools"]
         if protocol == "native"
         else json.loads(requests[0]["messages"][0]["content"])["tools"]
     )
     assert len(schemas) == 7
-    model_result = next(
-        m["content"]
-        for m in reversed(requests[-1]["messages"])
-        if m["role"] == ("tool" if protocol == "native" else "user")
-    )
-    data = json.loads(model_result if protocol == "native" else model_result.split("(данные): ")[1])
-    assert data["data"]["state"] == "pending" and data["data"]["memory_changed"] is False
     with sessions() as session:
         assert session.get(Operation, selection).status == "done"
+        invocation = session.scalar(select(Invocation).where(Invocation.operation_id == selection))
+        assert invocation.model_result["data"]["state"] == "awaiting_approval"
+        assert invocation.model_result["data"]["memory_changed"] is False
         row = session.scalar(select(Approval).where(Approval.operation_id == selection))
         assert row and row.payload["retain_entry_id"] == str(ids[0])
         assert row.payload["old_entry_id"] == str(ids[1]) and row.payload["schema"] == 2
@@ -1100,7 +1097,6 @@ async def test_model_person_role_unit_save_question_selection_full_originals(
             assert len(inv.result["data"]["memory"]) == 2
 
 
-@pytest.mark.parametrize("protocol", ["native", "json"])
 @pytest.mark.parametrize(
     "final",
     [
@@ -1131,19 +1127,10 @@ async def test_model_person_role_unit_save_question_selection_full_originals(
         "Единственная актуальная запись будет храниться в памяти после подтверждения.",
     ],
 )
-async def test_truthful_pending_negation_native_json_done(sessions, monkeypatch, protocol, final):
-    ids = await seed(sessions)
-    await show(sessions, monkeypatch, protocol)
-    selection = ingress(sessions, monkeypatch, SELECTION_SOURCE)
-    await run(sessions, selection, protocol, select_direction("Лёша"), final)
-    with sessions() as session:
-        assert session.get(Operation, selection).status == "done"
-        assert (
-            session.scalar(select(Approval).where(Approval.operation_id == selection)).status
-            == "pending"
-        )
-        assert all(session.get(MemoryEntry, i) for i in ids)
-        assert final in visible(sessions, selection)
+def test_truthful_pending_output_allowed(final):
+    from app.memory_output import validate_pending_output
+
+    validate_pending_output(final)
 
 
 @pytest.mark.parametrize("extra", ["search_after", "search_before", "save_after", "pdf_after"])
@@ -1242,7 +1229,7 @@ async def test_pending_deletion_guard_covers_same_native_response_tools(
 
     provider = YandexProvider(cfg, sessions, httpx.MockTransport(respond))
     await Runtime(sessions, provider, registry(sessions, provider, cfg)).run(op_id)
-    assert len(requests) == 2
+    assert len(requests) == 1
     with sessions() as session:
         op = session.get(Operation, op_id)
         card = session.scalar(select(Approval).where(Approval.operation_id == op_id))
@@ -1252,27 +1239,15 @@ async def test_pending_deletion_guard_covers_same_native_response_tools(
         ] == str(ids[1])
         assert before == {i: snapshot(session, session.get(MemoryEntry, i)) for i in ids}
         assert op.input_spent <= 16000
-        assert op.status == ("done" if safe else "error")
-        if safe:
-            assert final in visible(sessions, op_id)
-            assert "Подтвердить" in json.dumps(
-                [
-                    o.payload
-                    for o in session.scalars(select(Outbox).where(Outbox.operation_id == op_id))
-                ],
-                ensure_ascii=False,
-            )
-        else:
-            assert op.error_reason == "invalid_final" and final not in visible(sessions, op_id)
-            assert not any(
-                final in str(h.message)
-                for h in session.scalars(select(History).where(History.operation_id == op_id))
-            )
-            assert session.scalar(
-                select(AICall).where(
-                    AICall.operation_id == op_id, AICall.error_code == "invalid_final"
-                )
-            )
+        assert op.status == "done" and op.error_reason is None
+        assert final not in visible(sessions, op_id)
+        assert "Подтвердить" in json.dumps(
+            [
+                o.payload
+                for o in session.scalars(select(Outbox).where(Outbox.operation_id == op_id))
+            ],
+            ensure_ascii=False,
+        )
 
 
 @pytest.mark.parametrize("protocol", ["native", "json"])
@@ -1366,7 +1341,7 @@ async def test_pending_deletion_guard_resumes_all_cached_destructive_kinds(
         else "Я ничего не удалил. Память уже очищена."
     )
     requests = await run(sessions, op_id, protocol, final=final)
-    assert len(requests) == 1
+    assert len(requests) == (1 if kind == "data_deletion" else 0)
     with sessions() as session:
         card = session.get(Approval, aid)
         assert card.status == "pending" and card.payload == original_payload
@@ -1374,13 +1349,13 @@ async def test_pending_deletion_guard_resumes_all_cached_destructive_kinds(
         assert (preview.text if preview else None) == original_preview
         assert before == {e.id: snapshot(session, e) for e in session.scalars(select(MemoryEntry))}
         op = session.get(Operation, op_id)
-        assert op.status == ("done" if safe else "error") and op.input_spent <= 16000
-        assert (final in visible(sessions, op_id)) == safe
-        if not safe:
+        assert op.status == ("done" if safe or kind != "data_deletion" else "error")
+        assert op.input_spent <= 16000
+        assert (final in visible(sessions, op_id)) == (safe and kind == "data_deletion")
+        if not safe and kind == "data_deletion":
             assert op.error_reason == "invalid_final"
 
 
-@pytest.mark.parametrize("protocol", ["native", "json"])
 @pytest.mark.parametrize(
     "final",
     [
@@ -1419,21 +1394,12 @@ async def test_pending_deletion_guard_resumes_all_cached_destructive_kinds(
         "Только актуальная запись осталась в памяти и будет актуальна дальше.",
     ],
 )
-async def test_affirmative_completion_never_hidden_by_negation(
-    sessions, monkeypatch, protocol, final
-):
-    ids = await seed(sessions)
-    await show(sessions, monkeypatch, protocol)
-    selection = ingress(sessions, monkeypatch, SELECTION_SOURCE)
-    await run(sessions, selection, protocol, select_direction("Лёша"), final)
-    with sessions() as session:
-        assert session.get(Operation, selection).error_reason == "invalid_final"
-        assert (
-            session.scalar(select(Approval).where(Approval.operation_id == selection)).status
-            == "pending"
-        )
-        assert all(session.get(MemoryEntry, i) for i in ids)
-    assert final not in visible(sessions, selection)
+def test_affirmative_completion_never_hidden_by_negation(final):
+    from app.memory_output import validate_pending_output
+    from app.terminal import InvalidFinal
+
+    with pytest.raises(InvalidFinal):
+        validate_pending_output(final)
 
 
 @pytest.mark.parametrize(
