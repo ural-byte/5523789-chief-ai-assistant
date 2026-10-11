@@ -1,0 +1,17 @@
+Steward: Предварительное состояние architecture spike на 2026-10-11 (отдельное обновление поставки; комментарий 100 о согласованном приоритете не повторяется).
+
+Канонический репозиторий: https://github.com/ural-byte/5523789-chief-ai-assistant . Изолированная ветка codex/agent-runtime-spike, base 4ccfe10. План и технические результаты: docs/architecture/agent-runtime-spike.md, agent-runtime-spike-implementation-plan.md, agent-runtime-spike-adapter.md и sanitized evidence в docs/architecture/evidence/. Production deployment не менялся.
+
+Реализован изолированный runnable backend adapter: шесть capabilities через реальные handlers, trusted per-event binding, закрытый по умолчанию внешний доступ, Telegram delivery ACK, immutable keep/delete approval и backend callback. Это не завершённая интеграция Atelier.
+
+Независимые проверки: полный suite 578 PASS до исправления malformed callback; после исправления 51 spike-тест PASS (11.81 с), Ruff PASS. Локальных функциональных дефектов по возвращённым проверкам не осталось. Общий Checker: FAIL по внешним непройденным критериям — genuine Telegram acceptance, native binding и platform skills/model behavior NOT_RUN. Reviewer: NOT_RUN по обязательной последовательности gates. Итог Checker сохранён в docs/architecture/agent-runtime-spike-checker.md. Локальные PASS не подменяют обязательную живую приёмку.
+
+Atelier: V1 DeepSeek — два неуспешных preflight; V2 Alice — неуспешный; V3 — три настоящих Skills загружены/прикреплены; V4 сохранена, встроенные ImageGen/WebSearch/CodeInterpreter отключены. V4 базовый probe также FAIL: UI «Не удалось получить ответ агента», assistant answer/context proof отсутствует. MCP, native publication и отдельный тестовый Telegram-бот не подключены. Три Skills загружены настоящим native file picker, разрешения расширения не менялись; IDs и SHA manifest сохранены в adapter.md. Upload Skills не доказывает их фактическое применение.
+
+B / Responses: реальный YandexGPT function_call HTTP 200 за 791 мс, 95 tokens; ответ на function_call_output — ReadTimeout 45014 мс. DeepSeek первый запрос — ReadTimeout 45424 мс. Дополнительный previous_response_id probe: начальный YandexGPT function_call HTTP 200 за 857 мс, 95 tokens; второй запрос с function_call_output — ReadTimeout 45004 мс. Полный roundtrip/живой Telegram/архитектурная пригодность B не подтверждены. Тайм-ауты не устанавливают причину и не доказывают объективную непригодность A/B.
+
+Planner сохранил сравнение A/B/C по всем 13 критериям в docs/architecture/agent-runtime-spike-comparison.md. Steward сохранил промежуточный decision gate и следующий handoff в docs/architecture/agent-runtime-spike-decision.md. Предварительный decision gate: INCONCLUSIVE; рекомендация NOT_DECIDED. Выбор MIGRATE TO AGENT ATELIER / USE RESPONSES API / KEEP CURRENT RUNTIME пока не обоснован. Миграция, merge, production delivery и закрытие URALBYTE-9/11/12 не выполнялись.
+
+Persistence blocker: повторное создание отдельного spike с тем же creation-key chief-agent-runtime-spike-2026-10-11 и неизменным описанием вновь получило HTTP 429 без key/receipt; задача и has-epic связь не подтверждены. Whoami qdinov/cloud org bpf53toodvl9r97aasc2 успешен; issue AI access check также 429, проверка не отключалась. PR не создаётся до подтверждённого ключа задачи. Измеренных полных интервалов активной работы по ролям нет; затраченное время не выдумано и worklog не записывался.
+
+Идентификатор обновления: chief-agent-runtime-delivery-preliminary-2026-10-11.
