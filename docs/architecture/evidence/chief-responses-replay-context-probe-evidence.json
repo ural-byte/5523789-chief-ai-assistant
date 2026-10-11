@@ -1,0 +1,8 @@
+{
+  "probe": "responses_replayed_conversation_context",
+  "telegram_acceptance": "NOT_RUN",
+  "model": "gpt://b1go0lvlaf559s8t1qhi/yandexgpt",
+  "cost": "UNKNOWN",
+  "error_type": "ReadTimeout",
+  "latency_ms": 45380
+}

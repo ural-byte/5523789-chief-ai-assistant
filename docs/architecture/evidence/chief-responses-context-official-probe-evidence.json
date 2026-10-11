@@ -1,0 +1,54 @@
+{
+  "probe": "responses_stored_conversation_context",
+  "telegram_acceptance": "NOT_RUN",
+  "model": "gpt://b1go0lvlaf559s8t1qhi/yandexgpt",
+  "requests": [
+    {
+      "step": 1,
+      "status_code": 200,
+      "latency_ms": 727,
+      "response_id": "cd43ee58-3505-499e-8b84-9ba21c019648",
+      "output": [
+        {
+          "id": "86d067e5-6c0d-4d09-888b-b0d91945a20e",
+          "content": [
+            {
+              "annotations": [],
+              "text": "ОК.",
+              "type": "output_text",
+              "logprobs": null,
+              "valid": true
+            }
+          ],
+          "role": "assistant",
+          "status": "completed",
+          "type": "message",
+          "phase": null,
+          "valid": true
+        }
+      ],
+      "usage": {
+        "input_tokens": 28,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "valid": true,
+          "tool_tokens": 0
+        },
+        "output_tokens": 2,
+        "output_tokens_details": {
+          "reasoning_tokens": 0,
+          "valid": true
+        },
+        "total_tokens": 30,
+        "valid": true
+      },
+      "status": "completed"
+    },
+    {
+      "step": 2,
+      "error_type": "ReadTimeout",
+      "latency_ms": 45008
+    }
+  ],
+  "cost": "UNKNOWN"
+}

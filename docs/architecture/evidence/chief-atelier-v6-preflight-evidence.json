@@ -1,0 +1,17 @@
+{
+  "probe": "atelier_minimal_generation_preflight",
+  "agent_id": "aac99aa41o220jk4pqbq",
+  "version": "V6",
+  "model_ui": "YandexGPT 5.1 Pro",
+  "reasoning": false,
+  "built_in_tools": false,
+  "attached_skills": [],
+  "fresh_context": true,
+  "synthetic_prompt": "Ответь только словом Кедр.",
+  "result": "STREAM_TIMEOUT",
+  "request_id": "9cf76fbe-0b61-4abb-8d27-cb782d3dce9f",
+  "cause": "UNKNOWN",
+  "telegram_acceptance": "NOT_RUN",
+  "native_binding": "NOT_VERIFIED",
+  "production_bot_switched": false
+}

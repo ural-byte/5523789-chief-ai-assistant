@@ -90,7 +90,7 @@ message_id соответствующего receipt. Создаётся leased c
 | SPIKE_BINDING_VERIFIED | false по умолчанию, до документированной проверки |
 | SPIKE_BINDING_EVIDENCE | Ссылка на доказательство контракта; нужна для true |
 | SPIKE_AI_API_KEY / SPIKE_AI_FOLDER_ID | Embeddings provider только backend |
-| SPIKE_TELEGRAM_BOT_TOKEN | Только отдельный тестовый бот, нужен worker |
+| SPIKE_TELEGRAM_BOT_TOKEN | Bot token только transport worker; для текущего прогона пользователь разрешил временный @UralbyteDemoBot после switch/rollback gates |
 
 Секреты должны различаться. После настройки:
 
@@ -228,3 +228,21 @@ Steward после четырёх часов повторно проверил w
 **NOT_POSTED**. Ранее опубликованный plan comment 100 не повторялся.
 [Подготовленное delivery update](agent-runtime-spike-delivery-pending.md)
 не является долговременной записью в Tracker или свидетельством поставки.
+
+
+## Новое evidence и авторизация, 2026-10-11
+
+Предыдущие записи выше сохраняют историю probes; текущий результат B обновлён:
+
+- [Official Responses roundtrip](evidence/chief-responses-official-probe-evidence.json): HTTP200 function_call893ms,83tokens (70input/13output); HTTP200 function_call_output continuation433ms,145tokens (132input/13output,cached32), final weather answer. Function-call protocol PASS; platform MCP loop и Telegram Sasha/Lesha acceptance NOT_RUN.
+- [Stored context](evidence/chief-responses-context-official-probe-evidence.json): firstHTTP200727ms,30tokens (28input/2output); secondReadTimeout45008ms, result/usage UNKNOWN.
+- [Replayed context](evidence/chief-responses-replay-context-probe-evidence.json): ReadTimeout45380ms, result/usage UNKNOWN. Причины тайм-аутов и прежних ошибок UNKNOWN; несколько параметров изменились, причинную связь не заявляем. Стоимость UNKNOWN.
+- Atelier V5 YandexGPT5.1Pro +3Skills, no built-ins: generic UI error, FAIL этой попытки. V6 same model, reasoningOFF/noSkills/no built-ins/fresh context: STREAM_TIMEOUT, request-id `9cf76fbe-0b61-4abb-8d27-cb782d3dce9f`, [JSON evidence](evidence/chief-atelier-v6-preflight-evidence.json). Preflight FAIL, причина UNKNOWN; private screenshot в Git не включён. Это не доказательство непригодности A. Native binding NOT_VERIFIED, full acceptance NOT_RUN.
+
+Пользователь явно разрешил временно переключить активный @UralbyteDemoBot с прежним token на isolated spike. Это заменяет прежнее требование separate bot для данного прогона; isolated DB/data, owner permissions и backend approvals сохраняются. Switch NOT_RUN. Token читает/использует только Root через штатную защищённую конфигурацию; в docs/model/capture его нет. Planner/code не переключали polling/публикацию.
+
+[Limited capture plan](agent-runtime-spike-live-probe-plan.md) не меняет existing runtime: temporary noDB/noTelegramsecret endpoint, independent synthetic argument fingerprints, E1/E2 overlapping requests и swapped negatives. Header capability PASS не доказывает native Telegram identity и не включает SPIKE_BINDING_VERIFIED.
+
+URALBYTE-13 и has-epic link25 к URALBYTE-3 подтверждены. PR/merge/live PASS не заявлены. Full Checker остаётся FAIL по невыполненным live gates; Reviewer NOT_RUN. Итог INCONCLUSIVE, рекомендация NOT_DECIDED; decision/delivery records ведёт Steward.
+
+[Normalized messages context](evidence/chief-responses-normalized-context-probe-evidence.json): минимальные role/content assistant messages также дали ReadTimeout45312ms, response/usage/cost UNKNOWN. Диагностика context завершена; дальнейшие model retries не планируются. B function-call cycle PASS остаётся отдельным фактом от conversational continuation NOT_VERIFIED.
