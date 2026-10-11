@@ -1,0 +1,16 @@
+{
+  "probe": "github_ci",
+  "head_sha": "c908f98c3332ce3cb84bebd53f10d1fe49daa3df",
+  "pull_request": 7,
+  "run_id": 38151798051,
+  "conclusion": "success",
+  "status": "completed",
+  "pytest": {
+    "passed": 593,
+    "warnings": 7,
+    "duration_seconds": 265.97
+  },
+  "url": "https://github.com/ural-byte/5523789-chief-ai-assistant/actions/runs/38151798051",
+  "telegram_acceptance": "NOT_RUN",
+  "native_binding": "NOT_VERIFIED"
+}

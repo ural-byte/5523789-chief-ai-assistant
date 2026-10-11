@@ -1,0 +1,85 @@
+{
+  "probe": "responses_official_shape_roundtrip",
+  "telegram_acceptance": "NOT_RUN",
+  "model": "gpt://b1go0lvlaf559s8t1qhi/yandexgpt",
+  "cost": "UNKNOWN",
+  "requests": [
+    {
+      "step": 1,
+      "status_code": 200,
+      "latency_ms": 893,
+      "request_id": null,
+      "response_id": "249add9b-96eb-424b-86c5-43596b37636a",
+      "status": "completed",
+      "usage": {
+        "input_tokens": 70,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "valid": true,
+          "tool_tokens": 0
+        },
+        "output_tokens": 13,
+        "output_tokens_details": {
+          "reasoning_tokens": 0,
+          "valid": true
+        },
+        "total_tokens": 83,
+        "valid": true
+      },
+      "output": [
+        {
+          "arguments": "{\"city\":\"Кедр\"}",
+          "call_id": "000_35e43ece-179c-4231-bfea-cda62d0cdc68",
+          "name": "get_weather",
+          "type": "function_call",
+          "id": "e1102fd2-cf06-4c58-b087-7d3ce4d85167",
+          "namespace": null,
+          "status": "completed",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "status_code": 200,
+      "latency_ms": 433,
+      "request_id": null,
+      "response_id": "1942352d-8526-42a4-9a39-3e80db4d4eac",
+      "status": "completed",
+      "usage": {
+        "input_tokens": 132,
+        "input_tokens_details": {
+          "cached_tokens": 32,
+          "valid": true,
+          "tool_tokens": 0
+        },
+        "output_tokens": 13,
+        "output_tokens_details": {
+          "reasoning_tokens": 0,
+          "valid": true
+        },
+        "total_tokens": 145,
+        "valid": true
+      },
+      "output": [
+        {
+          "id": "b25162d3-3389-4717-a2de-f183e138700f",
+          "content": [
+            {
+              "annotations": [],
+              "text": "В тестовом городе Кедр температура составляет 20 градусов.",
+              "type": "output_text",
+              "logprobs": null,
+              "valid": true
+            }
+          ],
+          "role": "assistant",
+          "status": "completed",
+          "type": "message",
+          "phase": null,
+          "valid": true
+        }
+      ]
+    }
+  ]
+}

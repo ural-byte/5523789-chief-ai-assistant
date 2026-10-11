@@ -1,0 +1,15 @@
+{
+  "probe": "cloud_functions_runtime_read",
+  "resource_mutations": false,
+  "checks": [
+    {
+      "service": "iam",
+      "status_code": 200
+    },
+    {
+      "service": "cloud_functions",
+      "status_code": 503
+    }
+  ],
+  "latency_ms": 1242
+}

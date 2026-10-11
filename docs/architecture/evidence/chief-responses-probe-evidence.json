@@ -1,0 +1,13 @@
+{
+  "probe": "responses_function_call_roundtrip",
+  "telegram_acceptance": "NOT_RUN",
+  "cost": "UNKNOWN",
+  "model": "gpt://b1go0lvlaf559s8t1qhi/deepseek-v4.1-flash/latest",
+  "requests": [
+    {
+      "step": 1,
+      "error_type": "ReadTimeout",
+      "latency_ms": 45424
+    }
+  ]
+}

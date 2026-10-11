@@ -1,0 +1,47 @@
+{
+  "probe": "responses_previous_response_id_roundtrip",
+  "telegram_acceptance": "NOT_RUN",
+  "cost": "UNKNOWN",
+  "model": "gpt://b1go0lvlaf559s8t1qhi/yandexgpt/latest",
+  "requests": [
+    {
+      "step": 1,
+      "status_code": 200,
+      "latency_ms": 857,
+      "response_id": "b26fecda-08de-43af-b1a5-332dae0c3711",
+      "status": "completed",
+      "usage": {
+        "input_tokens": 82,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "valid": true,
+          "tool_tokens": 0
+        },
+        "output_tokens": 13,
+        "output_tokens_details": {
+          "reasoning_tokens": 0,
+          "valid": true
+        },
+        "total_tokens": 95,
+        "valid": true
+      },
+      "output": [
+        {
+          "arguments": "{\"text\":\"Кедр\"}",
+          "call_id": "000_5fcb4398-8a51-4040-b62c-2ecaad6dd313",
+          "name": "probe_echo",
+          "type": "function_call",
+          "id": "e12d8e61-6256-44f4-86eb-9b9bbed667ec",
+          "namespace": null,
+          "status": "completed",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "error_type": "ReadTimeout",
+      "latency_ms": 45004
+    }
+  ]
+}
