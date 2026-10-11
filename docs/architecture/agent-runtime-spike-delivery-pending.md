@@ -30,3 +30,51 @@ Atelier V1/V2/V4 не дали успешного ответа, V5 YandexGPT с 
 завершился ReadTimeout 45312 мс; причина UNKNOWN, retries модели остановлены.
 [Sanitized V6 evidence](evidence/chief-atelier-v6-preflight-evidence.json) сохранён
 для уже отражённого stream timeout. Decision остаётся INCONCLUSIVE/NOT_DECIDED.
+
+## Draft PR7: обратная ссылка в Трекер
+
+[Draft PR7](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/7) создан
+и attached Handyman; task URALBYTE-13 уже подтверждён. Backlink comment:
+**NOT_POSTED** — comments.add вернул HTTP 429 без receipt. Whoami сначала тоже
+HTTP 429, один bounded retry после45 секунд подтвердил qdinov/cloud org
+bpf53toodvl9r97aasc2. AI access check ON. Последующие Tracker calls остановлены;
+комментарии100/101 не повторяются. Ниже подготовленный текст обратной ссылки.
+
+Steward: Для architecture spike URALBYTE-13 создан Draft/WIP PR: https://github.com/ural-byte/5523789-chief-ai-assistant/pull/7 . Обратная ссылка на задачу: https://tracker.yandex.ru/URALBYTE-13 .
+
+Зафиксированное представление поставки: OPEN, isDraft=true; base main, head codex/agent-runtime-spike, snapshot c908f98c3332ce3cb84bebd53f10d1fe49daa3df. PR содержит изолированный backend adapter и согласованные документы/evidence. CI в этом обновлении не проверен, статус UNKNOWN.
+
+Полный spike не завершён: INCONCLUSIVE / NOT_DECIDED. Последний полный Checker: FAIL по внешнему gate; genuine Telegram и native binding NOT_RUN; Reviewer: NOT_RUN. Локальные тесты и успешный синтетический Responses roundtrip не означают живой PASS. @UralbyteDemoBot на момент этого обновления NOT_SWITCHED; временный тест отдельно разрешён пользователем с возвратом исходного транспорта.
+
+Возобновлено ограниченное планирование capture probe: round 2 Plan Challenger APPROVE. Hardworker реализует только probe/CLI/tests для проверки native binding; работа ещё не проверена. Это дополнительный исследовательский шаг, без полной миграции и без заявления PASS.
+
+PR остаётся Draft/WIP до требуемых проверок. Merge, постоянное переключение production, закрытие задачи и выбор архитектуры этим обновлением не выполняются. Комментарии100/101 не повторяются.
+
+Идентификатор обратной ссылки: chief-agent-runtime-spike-pr7-backlink-2026-10-11.
+
+## Checkpoint для следующего delivery update
+
+Финальные scoped counts получены; итоговая запись в Трекер **NOT_POSTED**.
+Перед публикацией whoami вернул HTTP 429, активную организацию в этой попытке
+подтвердить не удалось. В соответствии с ограничением root retry разрешён
+только после auth success; dry-run/comments.add не выполнялись, Tracker calls
+остановлены. Готовый итоговый текст: `/private/tmp/chief-spike-final-checkpoint-comment.md`. Обратная ссылка PR7 пока NOT_POSTED;
+comments100/101 уже сохранены, не повторять.
+
+- Draft PR7, exact head c908f98c3332ce3cb84bebd53f10d1fe49daa3df: обе CI checks
+  SUCCESS; run38151798051 — 593 PASS, 7 warnings, 265.97 с.
+  [Evidence](evidence/chief-spike-ci-c908f98-evidence.json).
+- Configured IAM HTTP 200; первая read-only Cloud Functions runtimes проверка
+  HTTP 503, 1242 мс общая latency. Повтор IAM HTTP 200 → GET ReadTimeout12 с,
+  общая latency13046 мс. [First evidence](evidence/chief-cloud-runtime-read-evidence.json),
+  [repeat evidence](evidence/chief-cloud-runtime-read-repeat-evidence.json).
+- Ресурсы/endpoint не созданы; actual MCP capture и live Telegram NOT_RUN;
+  бот NOT_SWITCHED. Capture code завершён: независимый scoped Checker
+  **87 PASS**, 12.43 с (51 прежний + 36 новых), scoped Ruff/format PASS,
+  standalone ZIP unauthenticated request 401 PASS; новых локальных defects нет.
+  Reviewer NOT_RUN. Эти counts не выдаются за CI нового remote head: Handyman
+  готовит update PR7, будущий SHA и его CI ещё не известны.
+- Decision INCONCLUSIVE/NOT_DECIDED; full migration/merge/closure не выполнены.
+
+[Передача следующего шага](agent-runtime-spike-decision.md) определяет необходимые
+проверки, checkpoint и единственную будущую delivery-запись после финальных counts.

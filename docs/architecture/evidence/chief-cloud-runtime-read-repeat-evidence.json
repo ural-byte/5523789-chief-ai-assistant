@@ -1,0 +1,13 @@
+{
+  "probe": "cloud_functions_runtime_read",
+  "resource_mutations": false,
+  "checks": [
+    {
+      "service": "iam",
+      "status_code": 200
+    }
+  ],
+  "error_type": "ReadTimeout",
+  "latency_ms": 13046,
+  "attempt": 2
+}

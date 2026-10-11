@@ -77,6 +77,32 @@ platform behavior **NOT_RUN**. **Reviewer: NOT_RUN** по согласованн
 Матрица Planner сохраняет UNKNOWN/NOT_TESTED/NOT_RETESTED для отсутствующих
 показателей; предпочтение нельзя выводить из удобства уже имеющегося кода.
 
+## Checkpoint CI и внешнего capture preflight
+
+[Draft PR7](https://github.com/ural-byte/5523789-chief-ai-assistant/pull/7) открыт
+с base main и head `codex/agent-runtime-spike`. Для точного checkpoint
+`c908f98c3332ce3cb84bebd53f10d1fe49daa3df` обе CI checks **SUCCESS**.
+[Run 38151798051](https://github.com/ural-byte/5523789-chief-ai-assistant/actions/runs/38151798051):
+**593 PASS**, 7 warnings, 265.97 с; [sanitized CI evidence](evidence/chief-spike-ci-c908f98-evidence.json).
+Это проверка указанного head; текущая доработка capture probe ещё не покрыта
+этим утверждением. Полный live gate и независимый Reviewer остаются непройденными.
+
+В ограниченном Cloud Functions preflight [первая попытка](evidence/chief-cloud-runtime-read-evidence.json)
+подтвердила configured IAM HTTP 200, затем официальный GET runtimes вернул
+HTTP 503; общая latency 1242 мс. [Один повтор](evidence/chief-cloud-runtime-read-repeat-evidence.json)
+снова получил IAM HTTP 200, затем GET runtimes ReadTimeout с лимитом 12 с;
+общая latency 13046 мс. Причина UNKNOWN. Это только read-only preflight:
+ресурсы и endpoint **не созданы**, actual MCP capture и genuine Telegram
+**NOT_RUN**, `@UralbyteDemoBot` **NOT_SWITCHED**. Доступность IAM не доказывает
+готовность Cloud Functions runtime или публикации endpoint.
+
+Capture probe прошёл round 2 Plan Challenger APPROVE. Hardworker завершил
+ограниченный probe/CLI/tests; независимый scoped Checker: **87 PASS**, 12.43 с
+(51 прежний + 36 новых), scoped Ruff/format PASS; standalone ZIP unauthenticated
+request возвращает 401 — PASS. Новых локальных defects не обнаружено.
+Reviewer **NOT_RUN**. Успех сборки/CI прежнего head и read-only preflight не
+выдаются за native binding PASS. Модельные retries остановлены.
+
 ## Условия для следующего решения
 
 | Возможная рекомендация | Необходимое основание | Текущий вердикт |
@@ -143,7 +169,45 @@ bpf53toodvl9r97aasc2; AI access check всё время включён. Issue me
 availability unavailable / ai_access_unavailable. Это подтверждённая запись,
 содержимое issue не раскрывалось. Последний normalized-context timeout получен
 после публикации комментария и сохранён локально; отдельно в Tracker не дописан.
-Подтверждённый ключ задачи теперь доступен для связи draft PR; полный spike
-и human acceptance от этого не становятся завершёнными. PR этим агентом не
-создавался. Надёжных полных интервалов активной работы по ролям нет, worklog
+Handyman создал и attached Draft PR7; ключ задачи указан в PR. Обратная ссылка
+из Tracker пока **NOT_POSTED**: comments.add HTTP 429 без receipt. Наличие PR
+и зелёного checkpoint CI не завершает spike или human acceptance. Merge и
+закрытие задачи не выполнялись; этот агент PR не менял. Надёжных полных интервалов активной работы по ролям нет, worklog
 и стоимость задним числом не выдуманы.
+
+## Передача для следующей итерации
+
+Этот раздел позволяет возобновить работу без восстановления агентских логов.
+Последнее основание: URALBYTE-13, Draft PR7, head checkpoint c908f98, утверждённый
+ограниченный capture probe; общий итог **INCONCLUSIVE / NOT_DECIDED**.
+
+1. Capture code завершён; независимый scoped Checker выдал 87 PASS, 12.43 с,
+   Ruff/format PASS и standalone ZIP unauthorized 401 PASS. Полный Checker
+   остаётся FAIL по внешним live gates; эти результаты не означают native PASS.
+2. После проверок Handyman обновляет существующий Draft PR7 согласованным
+   checkpoint. Финальные counts, SHA и CI привязываются к конкретной версии;
+   593 PASS относится только к c908f98. Полный spike от этого не закрывается.
+3. Для live продолжения нужен реально опубликованный endpoint и evidence
+   native binding/ACK/callback по утверждённому probe. Сейчас endpoint отсутствует,
+   bounded Cloud Functions preflight завершился 503/timeout. Это blocker внешнего
+   шага, без доказанной причины; дополнительные бесконечные retries не планируются.
+4. Временный switch @UralbyteDemoBot отдельно авторизован, но не выполнен.
+   Перед переключением инженерная роль подтверждает готовность capture,
+   единственного consumer и восстановления исходного транспорта. Только genuine
+   результат владельца может закрыть соответствующий Telegram gate.
+5. Финальные scoped counts получены; Steward подготавливает одну актуальную
+   запись в URALBYTE-13 с обратной ссылкой PR7, точным CI checkpoint, 87 локальными
+   PASS, внешними NOT_RUN и NOT_DECIDED. Её публикация требует подтверждённого
+   receipt; comments100/101 не повторяются. CI будущего Handyman checkpoint
+   не объявляется зелёным заранее.
+
+После полного Checker PASS и Reviewer APPROVE Planner обновляет сравнение,
+Steward сохраняет evidence-based recommendation, пользователь отдельно решает
+вопрос миграции. Ни Draft PR, ни разрешение временного теста не разрешают
+полную миграцию, постоянный production switch, merge или закрытие заказа.
+
+Последняя итоговая запись с PR7 и scoped 87 PASS **NOT_POSTED**: свежий whoami
+HTTP 429. Без подтверждённой организации mutating calls не выполнялись; retry
+не запускался согласно ограничению auth gate. Готовый body сохраняет факты
+87 PASS и CI старого c908f98, не предсказывая будущий head. Comments100/101
+не повторять. Полный spike и задача остаются незавершёнными.

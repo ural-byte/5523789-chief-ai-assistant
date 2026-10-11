@@ -246,3 +246,26 @@ Steward после четырёх часов повторно проверил w
 URALBYTE-13 и has-epic link25 к URALBYTE-3 подтверждены. PR/merge/live PASS не заявлены. Full Checker остаётся FAIL по невыполненным live gates; Reviewer NOT_RUN. Итог INCONCLUSIVE, рекомендация NOT_DECIDED; decision/delivery records ведёт Steward.
 
 [Normalized messages context](evidence/chief-responses-normalized-context-probe-evidence.json): минимальные role/content assistant messages также дали ReadTimeout45312ms, response/usage/cost UNKNOWN. Диагностика context завершена; дальнейшие model retries не планируются. B function-call cycle PASS остаётся отдельным фактом от conversational continuation NOT_VERIFIED.
+
+
+## Capture-only transport kit
+
+Добавлен отдельный диагностический endpoint `app/spike_atelier/probe.py`,
+bounded runner `scripts/spike_mcp_probe.py` и 36 regression tests. Он возвращает
+синтетический `list_tasks`, не подключается к DB и не заменяет шесть реальных
+backend capabilities. Signed E1/E2 сопоставляются с независимыми argument
+fingerprints; перестановка даёт 403/FAIL, неизвестная originating correlation
+остаётся NOT_VERIFIED. Credential-bearing metadata и произвольные поля не
+попадают в capture/evidence. Подготовка private ZIP и cleanup описаны в
+[capture run handoff](agent-runtime-spike-capture-run.md).
+
+Независимый Checker: весь spike scope **87 PASS**, 12.43 с, scoped Ruff/format
+и standalone ZIP smoke PASS. Общий gate сохраняет FAIL из-за отсутствующей
+живой приёмки; Reviewer NOT_RUN. CI до добавления capture kit подтвердил
+**593 PASS** для exact checkpoint `c908f98`; это отдельное историческое измерение.
+
+Hosting не создан: официальный Cloud Functions runtime REST read при успешном
+IAM вернул 503, повтор завершился 12-секундным ReadTimeout. Evidence сохранён
+отдельными JSON в `evidence/`. Actual provider MCP, Telegram source identity,
+canonical delivery/callback и acceptance остаются NOT_RUN/NOT_VERIFIED.
+`SPIKE_BINDING_VERIFIED=false`; рабочий бот не переключался.
